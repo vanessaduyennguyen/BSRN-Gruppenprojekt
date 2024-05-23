@@ -58,8 +58,13 @@ if __name__ == "__main__":
 
     if os.path.exists(filename):
         words = open_file(filename)
-        felder_Anzahl = int(input("Geben Sie die Anzahl der Felder ein: "))
+        parser.add_argument('--felder_Anzahl', type=int, required=False, help='Die Anzahl der Felder')
+        args = parser.parse_args()
+        # Weise die Anzahl der Felder der Variable zu
+        felder_Anzahl = args.felder_Anzahl
+        # felder_Anzahl = int(input("Geben Sie die Anzahl der Felder ein: "))
         create_bingo_card(felder_Anzahl, words)
     else:
         print(f"Die Datei {filename} existiert nicht.")
+
 
