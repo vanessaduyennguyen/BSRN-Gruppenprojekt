@@ -45,19 +45,30 @@ def create_bingo_card(felder_Anzahl, words):
     root.mainloop()
     #return felder_matrix
     
+# Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
 def main():
+    # Kommandozeilenargumente mit dem argparse-Modul hinzufügen
     parser = argparse.ArgumentParser(description="Erstellen einer Bingo-Karte.")
-    parser.add_argument("wordfile", nargs='?', help='Der Name der zu öffnenden Datei')
+    # Definiert das Kommandozeilenargument 'filename' (Dateiname)
+    parser.add_argument("wordfile", nargs='?', help='Der Name der zu öffnenden Datei') 
+    # Definiert das Kommandozeilenargument 'felder_Anzahl' (Anzahl der Felder auf der Bingo-Karte)
     parser.add_argument("felder_Anzahl", type=int, help="Die Anzahl der Felder der Bingo-Karte.")
+    
+    # Parst die Kommandozeilenargumente und speichert sie in 'args'
     args = parser.parse_args()
 
+    # Weist die Argumente 'filename' und 'felder_Anzahl' den entsprechenden Variablen zu
     filename = args.wordfile
     felder_Anzahl = args.felder_Anzahl
 
+    # Überprüft, ob die angegebene Datei existiert
     if os.path.exists(filename):
+        # Wenn sie existiert, wird sie geöffnet
         words = open_file(filename)
+        # Ruft die Funktion zum Erstellen der Bingo-Karte auf
         create_bingo_card(felder_Anzahl, words)
     else:
+        # Wenn die Datei nicht existiert, wird eine Fehlermeldung ausgegeben
         print(f"Die Datei {filename} existiert nicht.")
         
 if __name__ == "__main__":
