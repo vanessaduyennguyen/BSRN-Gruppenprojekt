@@ -45,26 +45,22 @@ def create_bingo_card(felder_Anzahl, words):
     root.mainloop()
     return felder_matrix
     
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(prog="textdateibefehl.py", add_help=False)
-    parser.add_argument('wordfile', nargs='?', help='Der Name der zu öffnenden Datei')
+    parser.add_argument("wordfile", nargs='?', help='Der Name der zu öffnenden Datei')
+    parser.add_argument("felder_Anzahl", type=int, help="Die Anzahl der Felder der Bingo-Karte.")
     args = parser.parse_args()
 
-    if args.wordfile is None:
-        filename = input("Geben Sie den Namen der Textdatei ein:")
-    else:
-        filename = args.wordfile
+    filename = args.wordfile
+    felder_Anzahl = args.felderAnzahl
 
     if os.path.exists(filename):
         words = open_file(filename)
-        parser.add_argument('--felder_Anzahl', type=int, required=False, help='Die Anzahl der Felder')
-        args = parser.parse_args()
-        # Weise die Anzahl der Felder der Variable zu
-        felder_Anzahl = args.felder_Anzahl
-        # felder_Anzahl = int(input("Geben Sie die Anzahl der Felder ein: "))
         create_bingo_card(felder_Anzahl, words)
     else:
         print(f"Die Datei {filename} existiert nicht.")
+        
+if __name__ == "__main__":
+    main()
 
 
