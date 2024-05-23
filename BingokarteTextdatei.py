@@ -31,7 +31,7 @@ def create_bingo_card(felder_Anzahl, words):
             # Zu der Reihe der Matrix werden bei jedem Durchlauf der Schleife TTkButton-Objekte hinzugefügt (insgesamt felder_Anzahl-Objekte).
             rows.append(feld)
 
-            if felder_Anzahl == 5 and y == 2 and x == 2 or felder_Anzahl == 7 and y == 3 and x == 3:
+            if felder_Anzahl%2 != 0 and x == (felder_Anzahl//2) and y == (felder_Anzahl//2):
                 neues_Feld = JOKER_ausfüllen(feld)
                 # Der Index von dem altem Feld(der zuletzt genutzte Index) wird durch das neue Feld (mit den "neuen Attributen") ersetzt.
                 last_index = len(rows)-1
@@ -40,9 +40,11 @@ def create_bingo_card(felder_Anzahl, words):
         # Die "fertige" Reihe wird nun der Matrix hinzugefügt
         # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
         felder_matrix.append(rows)
-
+    
+        
     root.mainloop()
-
+    return felder_matrix
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="textdateibefehl.py", add_help=False)
