@@ -12,7 +12,7 @@ def JOKER_ausfüllen(feld):
 
 
 def open_file(filename):
-    with open(filename, 'r', encoding='uft-8') as file:
+    with open(filename, 'r', encoding='utf-8') as file:
         return file.read().splitlines()
 
 def create_bingo_card(felder_Anzahl, words):
