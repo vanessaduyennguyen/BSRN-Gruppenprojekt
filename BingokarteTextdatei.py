@@ -3,13 +3,38 @@ import argparse
 import os
 import random
 
+def pruefe_Ob_Bingo(felder_matrix):
+    # Überprüfung, ob es ein Bingo diagonal von oben links nach unten rechts gibt
+    if all(felder_matrix[i][i].isChecked() for i in range(len(felder_matrix))):
+        bingo = True
+
+    # Überprüfung, ob es ein Bingo diagonal von oben rechts nach unten links gibt
+    if all(felder_matrix[i][len(felder_matrix) - 1 - i].isChecked() for i in range(len(felder_matrix))):
+        bingo = True   
+
+    # Überprüfung, ob es ein Bingo in einer Reihe gibt
+    for row in felder_matrix:
+         if all(feld.isChecked() for feld in row):
+            bingo = True
+            break
+         
+    # Überprüfung, ob es ein Bingo in einer Spalte gibt
+    for col in range(len(felder_matrix[0])):
+        if all(row[col].isChecked() for row in felder_matrix):
+            bingo = True
+            break 
+    
+    if bingo:
+        print("Bingo gefunden!")
+    else:
+        print("Kein Bingo gefunden.")
+
 # Die Methode soll das Feld in der Mitte ersetzen und automatisch markieren.
 # Das Feld mit den neuen Eigenschaften wird zurückgegeben.
 def JOKER_ausfüllen(feld):
     feld.setText("JOKER")
     feld.setChecked(True)
     return feld
-
 
 def open_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
@@ -43,7 +68,8 @@ def create_bingo_card(felder_Anzahl, words):
     
         
     root.mainloop()
-    #return felder_matrix
+    pruefe_Ob_Bingo(felder_matrix)
+    return felder_matrix
     
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
 def main():
