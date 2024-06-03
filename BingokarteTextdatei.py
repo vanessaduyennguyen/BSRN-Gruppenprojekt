@@ -2,6 +2,11 @@ import TermTk as ttk
 import argparse
 import os
 import random
+import logging
+
+#logging startet
+logging.basicConfig(filename='bingo_log.log', level=logging.DEBUG, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 def pruefe_Ob_Bingo(felder_matrix):
     # Überprüfung, ob es ein Bingo diagonal von oben links nach unten rechts gibt
@@ -25,8 +30,10 @@ def pruefe_Ob_Bingo(felder_matrix):
             break 
     
     if bingo:
+        logging.info("Bingo gefunden!")
         print("Bingo gefunden!")
     else:
+        logging.info("Kein Bingo gefunden.")
         print("Kein Bingo gefunden.")
 
 # Die Methode soll das Feld in der Mitte ersetzen und automatisch markieren.
@@ -34,10 +41,12 @@ def pruefe_Ob_Bingo(felder_matrix):
 def JOKER_ausfüllen(feld):
     feld.setText("JOKER")
     feld.setChecked(True)
+    logging.info("Joker Feld gesetzt.")
     return feld
 
 def open_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
+        logging.info(f"Datei {filename} geöffnet und gelesen") 
         return file.read().splitlines()
 
 def create_bingo_card(felder_Anzahl, words):
@@ -95,9 +104,12 @@ def main():
         create_bingo_card(felder_Anzahl, words)
     else:
         # Wenn die Datei nicht existiert, wird eine Fehlermeldung ausgegeben
+        logging.error(f"Die Datei {filename} existiert nicht.")
         print(f"Die Datei {filename} existiert nicht.")
         
 if __name__ == "__main__":
+    logging.info("Bingo Programm gestartet.")
     main()
+    logging.info("Bingo Programm beendet.")
 
 
