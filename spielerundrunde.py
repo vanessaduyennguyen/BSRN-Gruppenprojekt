@@ -1,10 +1,34 @@
+import os
+
+import BingokarteTextdatei
+
+
+
+
 def Spieler():
-    name=str(input("bitte geben Sie ihren Namen ein"))
+    name=str(input("Bitte geben Sie ihren Namen ein"))
     alter=int(input("Bitte geben Sie ihr alter ein"))
     runde=1
    # Spielfeld=randomspielfeld()
+maxNumerRounds =3 
+def runde():
+
+    bingoInRound = False
+    Number = 0
+
+    def getCheckBingo():
+         if BingokarteTextdatei.pruefe_Ob_Bingo(BingokarteTextdatei.felder_matrix): 
+            bingoInRound = True
+            if Number < maxNumerRounds:   # wenn aktuelle Rundenzahl kleiner als maximale Rundenzahl 
+                runde.newRound()            # wird eine neue Runde kreiert 
+    def newRound():
+              bingoInRound = False
+              Number +=1 
+
+
 
 #ob es ein bingo ist
+'''
     def bingo(bingoKarte):
         #bingo in der zeile
         for row in bingoKarte:
@@ -24,7 +48,7 @@ def Spieler():
             return True
 
         return False        
-        
+'''      
 
 Spieler()
         

@@ -30,11 +30,15 @@ def pruefe_Ob_Bingo(felder_matrix):
             break 
     
     if bingo:
+        
         logging.info("Bingo gefunden!")
         print("Bingo gefunden!")
+        return True
     else:
+
         logging.info("Kein Bingo gefunden.")
         print("Kein Bingo gefunden.")
+        return False
 
 # Die Methode soll das Feld in der Mitte ersetzen und automatisch markieren.
 # Das Feld mit den neuen Eigenschaften wird zurückgegeben.
