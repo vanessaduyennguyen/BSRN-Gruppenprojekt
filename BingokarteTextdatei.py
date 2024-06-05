@@ -3,87 +3,178 @@ import argparse
 import os
 import random
 import logging
+from TermTk.TTkWidgets.button import TTkButton
+from TermTk.TTkWidgets.resizableframe import TTkResizableFrame
 
-#logging startet
-logging.basicConfig(filename='bingo_log.log', level=logging.DEBUG, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-
-def pruefe_Ob_Bingo(felder_matrix):
-    # Überprüfung, ob es ein Bingo diagonal von oben links nach unten rechts gibt
-    if all(felder_matrix[i][i].isChecked() for i in range(len(felder_matrix))):
-        bingo = True
-
-    # Überprüfung, ob es ein Bingo diagonal von oben rechts nach unten links gibt
-    if all(felder_matrix[i][len(felder_matrix) - 1 - i].isChecked() for i in range(len(felder_matrix))):
-        bingo = True   
-
-    # Überprüfung, ob es ein Bingo in einer Reihe gibt
-    for row in felder_matrix:
-         if all(feld.isChecked() for feld in row):
-            bingo = True
-            break
-         
-    # Überprüfung, ob es ein Bingo in einer Spalte gibt
-    for col in range(len(felder_matrix[0])):
-        if all(row[col].isChecked() for row in felder_matrix):
-            bingo = True
-            break 
-    
-    if bingo:
+# Spielerklasse erstellen
+class Spieler:
+    def __init__(self, name, pipe_name, pos, size=(50,20)):
+        """
+        Initialisiert die Spielerklasse mit Name, Pipe, Position und Größe des Fensters.
         
-        logging.info("Bingo gefunden!")
-        print("Bingo gefunden!")
-        return True
-    else:
+        name: Name des Spielers
+        pipe_name: Name der benannten Pipe zur Kommunikation
+        pos: Position des Fensters
+        size: Größe des Fensters
+        """
+        self.name = name
+        self.pipe_name = pipe_name
+        self.root = ttk.TTk()
+        self.bingoFenster = ttk.TTkWindow(parent=self.root, pos=pos, size=size, title=name, resizable = True)
+        self.winLayout = ttk.TTkGridLayout()
+        self.bingoFenster.setLayout(self.winLayout)
+        self.felder_matrix = []
 
-        logging.info("Kein Bingo gefunden.")
-        print("Kein Bingo gefunden.")
-        return False
+    #logging startet
+    logging.basicConfig(filename='bingo_log.log', level=logging.DEBUG, 
+                        format='%(asctime)s - %(levelname)s - %(message)s')
+    
+    def create_bingo_card(self, felder_Anzahl, words):
+        """
+        Erstellt die Bingo-Karte mit der angegebenen Anzahl von Feldern und Wörtern
+        
+        felder_Anzahl: Anzahl der Felder (NxN)
+        words: Liste der Wörter für die Bingo-Karte
+        """
+        #gridLayout = ttk.TTkGridLayout(columnMinHeight=0,columnMinWidth=0)
+        #root = ttk.TTk(layout=gridLayout)
+        
+        # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
+        felder_matrix = []
+        for x in range(felder_Anzahl):
+            # Es wird eine Reihe der Matrix erstellt
+            rows = []
+            for y in range(felder_Anzahl):
+                word = random.choice(words)
+                words.remove(word)
+                feld = ttk.TTkButton(border=True, text=word, checked = False, checkable = True)
+                #gridLayout.addWidget(feld, row = x, col = y, rowspan=1, colspan=1, direction=3)
+                self.winLayout.addWidget(feld, x, y)
+                # Zu der Reihe der Matrix werden bei jedem Durchlauf der Schleife TTkButton-Objekte hinzugefügt (insgesamt felder_Anzahl-Objekte).
+                rows.append(feld)
 
-# Die Methode soll das Feld in der Mitte ersetzen und automatisch markieren.
-# Das Feld mit den neuen Eigenschaften wird zurückgegeben.
-def JOKER_ausfüllen(feld):
-    feld.setText("JOKER")
-    feld.setChecked(True)
-    logging.info("Joker Feld gesetzt.")
-    return feld
+                if felder_Anzahl %2 != 0 and x == (felder_Anzahl//2) and y == (felder_Anzahl//2):
+                    feld = self.JOKER_ausfüllen(feld)
+                    # Der Index von dem altem Feld(der zuletzt genutzte Index) wird durch das neue Feld (mit den "neuen Attributen") ersetzt.
+                    last_index = len(rows)-1
+                    rows[last_index] = feld
 
+        # Die "fertige" Reihe wird nun der Matrix hinzugefügt
+        # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
+        self.felder_matrix.append(rows)
+    
+        
+        #root.mainloop()
+        self.pruefe_Ob_Bingo()
+        return self.felder_matrix
+    
+    # Die Methode soll das Feld in der Mitte ersetzen und automatisch markieren.
+    # Das Feld mit den neuen Eigenschaften wird zurückgegeben.
+    @staticmethod
+    def JOKER_ausfüllen(feld):
+        feld.setText("JOKER")
+        feld.setChecked(True)
+        logging.info("Joker Feld gesetzt.")
+        return feld
+    
+
+    def pruefe_Ob_Bingo(self):
+        bingo = False
+        # Überprüfung, ob es ein Bingo diagonal von oben links nach unten rechts gibt
+        if all(self.felder_matrix[i][i].isChecked() for i in range(len(self.felder_matrix))):
+            bingo = True
+
+        # Überprüfung, ob es ein Bingo diagonal von oben rechts nach unten links gibt
+        if all(self.felder_matrix[i][len(self.felder_matrix) - 1 - i].isChecked() for i in range(len(self.felder_matrix))):
+            bingo = True   
+
+        # Überprüfung, ob es ein Bingo in einer Reihe gibt
+        for row in self.felder_matrix:
+            if all(feld.isChecked() for feld in row):
+                bingo = True
+                break
+         
+        # Überprüfung, ob es ein Bingo in einer Spalte gibt
+        for col in range(len(self.felder_matrix[0])):
+            if all(row[col].isChecked() for row in self.felder_matrix):
+                bingo = True
+                break 
+    
+        if bingo:
+            message = f"{self.name} hat gewonnen!!!"
+            logging.info("Bingo gefunden!")
+            print("Bingo gefunden!")
+            # Benannte Pipe im write()-Modus öffnen
+            with open(self.pipe_name, 'w') as pipe:
+                pipe.write(message + "\n")
+                pipe.flush()
+            return True
+        else:
+            logging.info("Kein Bingo gefunden.")
+            return False
+        
+    def start(self):
+        pass
+
+# Datei öffnen und einlesen der Zeilen in einer liste
 def open_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         logging.info(f"Datei {filename} geöffnet und gelesen") 
         return file.read().splitlines()
 
-def create_bingo_card(felder_Anzahl, words):
-    gridLayout = ttk.TTkGridLayout(columnMinHeight=0,columnMinWidth=0)
-    root = ttk.TTk(layout=gridLayout)
-    # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
-    felder_matrix = []
-    for x in range(felder_Anzahl):
-        # Es wird eine Reihe der Matrix erstellt
-        rows = []
-        for y in range(felder_Anzahl):
-            word = random.choice(words)
-            words.remove(word)
-            feld = ttk.TTkButton(parent=root, border=True, text=word, checked = False, checkable = True)
-            gridLayout.addWidget(feld, row = x, col = y, rowspan=1, colspan=1, direction=3)
-            # Zu der Reihe der Matrix werden bei jedem Durchlauf der Schleife TTkButton-Objekte hinzugefügt (insgesamt felder_Anzahl-Objekte).
-            rows.append(feld)
-
-            if felder_Anzahl%2 != 0 and x == (felder_Anzahl//2) and y == (felder_Anzahl//2):
-                neues_Feld = JOKER_ausfüllen(feld)
-                # Der Index von dem altem Feld(der zuletzt genutzte Index) wird durch das neue Feld (mit den "neuen Attributen") ersetzt.
-                last_index = len(rows)-1
-                rows[last_index] = neues_Feld
-
-        # Die "fertige" Reihe wird nun der Matrix hinzugefügt
-        # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
-        felder_matrix.append(rows)
+def server_process(pipe_name, pos, size, felder_Anzahl, words):
+    """
+    Server-Prozess zur Verwaltung des Spiels und der Bingo-Karte des Servers
     
-        
-    root.mainloop()
-    pruefe_Ob_Bingo(felder_matrix)
-    return felder_matrix
+    pipe_name: Name der benannten Pipe zur Kommunikation
+    pos: Position des Fensters
+    size: Größe des Fensters
+    felder_Anzahl: Anzahl der Felder (NxN)
+    words: Liste der Wörter für die Bingo-Karte
+    """
+    print("Das Bingospiel wurde gestartet.")
+    spieler = Spieler("server", pipe_name, pos, size)
+    spieler.create_bingo_card(felder_Anzahl, words)
     
+    # Erstellen der benannten Pipe (wenn sie nicht schon existiert)
+    if not os.path.exists(pipe_name):
+        os.mkfifo(pipe_name) # Funktion nicht für Windows
+    
+    # Benannte Pipe im read()-Modus öffnen
+    with open(pipe_name, 'r') as pipe:
+        while True:
+            # Jede Zeile wird einzeln gelesen - daher "\n" wichtig
+            message = pipe.readline().strip() 
+            if message:
+                print(message)
+                logging.info(message)
+                if "hat gewonnen" in message:
+                    break
+    
+    spieler.root.mainloop()
+    
+def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
+    """
+    Client-Prozess zur Erstellung eines Spielers und dessen Bingo-Karte.
+    
+    name: Name des Spielers
+    pipe_name: Name der benannten Pipe zur Kommunikation
+    pos: Position des Fensters
+    size: Größe des Fensters
+    felder_Anzahl: Anzahl der Felder (NxN)
+    words: Liste der Wörter für die Bingo-Karte
+    """
+    spieler = Spieler(name, pipe_name, pos, size)
+    spieler.create_bingo_card(felder_Anzahl, words)
+    
+    # Öffnen der Pipe zum Senden der Beitrittsnachricht (write-Modus)
+    with open(pipe_name, 'w') as pipe:
+        pipe.write(f"{name} ist beigetreten.\n")
+        print(name + " ist beigetreten.")
+        pipe.flush()
+    
+    spieler.root.mainloop()
+  
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
 def main():
     # Kommandozeilenargumente mit dem argparse-Modul hinzufügen
@@ -92,24 +183,43 @@ def main():
     parser.add_argument("wordfile", nargs='?', help='Der Name der zu öffnenden Datei') 
     # Definiert das Kommandozeilenargument 'felder_Anzahl' (Anzahl der Felder auf der Bingo-Karte)
     parser.add_argument("felder_Anzahl", type=int, help="Die Anzahl der Felder der Bingo-Karte.")
-    
+    # Server wird gestartet, um die Kommunikation zwischen den Prozessen zu gewährleisten
+    parser.add_argument("--server", action='store_true', help="Starte als Server") 
+    # Hiermit wird jeder Spieler (Client) - Prozess gestartet
+    parser.add_argument("--name", type=str, help="Name des Spielers") 
     # Parst die Kommandozeilenargumente und speichert sie in 'args'
     args = parser.parse_args()
 
     # Weist die Argumente 'filename' und 'felder_Anzahl' den entsprechenden Variablen zu
     filename = args.wordfile
     felder_Anzahl = args.felder_Anzahl
+    
+    # Name der Pipe festlegen
+    pipe_name = "/tmp/bingo_pipe"
 
     # Überprüft, ob die angegebene Datei existiert
     if os.path.exists(filename):
         # Wenn sie existiert, wird sie geöffnet
         words = open_file(filename)
-        # Ruft die Funktion zum Erstellen der Bingo-Karte auf
-        create_bingo_card(felder_Anzahl, words)
+        
+        if args.server:
+            # Startet den Server-Prozess wenn --server eingegeben wird
+            server_process(pipe_name, (0, 0), (50, 20), felder_Anzahl, words)
+        else:
+            # Startet den Client-Prozess wenn --name eingegeben wird
+            if args.name:
+                name = args.name
+            else:
+                # Falls kein Name beim Starten des Prozesses eingegeben wurde
+                name = input("Geben Sie Ihren Namen ein:")
+            
+            client_process(name, pipe_name, (0, 0), (50, 20), felder_Anzahl, words)
+        
     else:
         # Wenn die Datei nicht existiert, wird eine Fehlermeldung ausgegeben
         logging.error(f"Die Datei {filename} existiert nicht.")
         print(f"Die Datei {filename} existiert nicht.")
+        return
         
 if __name__ == "__main__":
     logging.info("Bingo Programm gestartet.")
