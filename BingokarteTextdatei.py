@@ -49,6 +49,7 @@ class Spieler:
                 words.remove(word)
                 feld = ttk.TTkButton(border=True, text=word, checked = False, checkable = True)
                 #gridLayout.addWidget(feld, row = x, col = y, rowspan=1, colspan=1, direction=3)
+                feld.clicked.connect(self.pruefe_Ob_Bingo)
                 self.winLayout.addWidget(feld, x, y)
                 # Zu der Reihe der Matrix werden bei jedem Durchlauf der Schleife TTkButton-Objekte hinzugefügt (insgesamt felder_Anzahl-Objekte).
                 rows.append(feld)
@@ -77,6 +78,15 @@ class Spieler:
         logging.info("Joker Feld gesetzt.")
         return feld
     
+    def zeige_gewonnen_nachricht(self):
+        # Erstellen eines neuen Fensters, um die Gewinnnachricht anzuzeigen
+        gewonnenFenster = ttk.TTkWindow(parent=self.root, title="Bingo!", size=(20, 5))
+        gewonnenLayout = ttk.TTkGridLayout()
+        gewonnenFenster.setLayout(gewonnenLayout)
+        gewonnenLabel = ttk.TTkLabel(text=f"{self.name} hat gewonnen!!!")
+        gewonnenLayout.addWidget(gewonnenLabel, 0, 0)
+        gewonnenFenster.show()
+        print("Du hast gewonnen!!!")
 
     def pruefe_Ob_Bingo(self):
         bingo = False
@@ -103,7 +113,6 @@ class Spieler:
         if bingo:
             message = f"{self.name} hat gewonnen!!!"
             logging.info("Bingo gefunden!")
-            print("Bingo gefunden!")
             # Benannte Pipe im write()-Modus öffnen
             with open(self.pipe_name, 'w') as pipe:
                 pipe.write(message + "\n")
@@ -142,14 +151,11 @@ def server_process(pipe_name, pos, size, felder_Anzahl, words):
     
     # Benannte Pipe im read()-Modus öffnen
     with open(pipe_name, 'r') as pipe:
-        while True:
             # Jede Zeile wird einzeln gelesen - daher "\n" wichtig
             message = pipe.readline().strip() 
             if message:
                 print(message)
                 logging.info(message)
-                if "hat gewonnen" in message:
-                    break
     
     spieler.root.mainloop()
     
