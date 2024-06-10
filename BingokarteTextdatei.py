@@ -3,6 +3,8 @@ import argparse
 import os
 import random
 import logging
+import threading
+import time
 from TermTk.TTkWidgets.button import TTkButton
 from TermTk.TTkWidgets.resizableframe import TTkResizableFrame
 
@@ -87,6 +89,16 @@ class Spieler:
         gewonnenLayout.addWidget(gewonnenLabel, 0, 0)
         gewonnenFenster.show()
         print("Du hast gewonnen!!!")
+        
+    def zeige_verloren_nachricht(self):
+        # Erstellen eines neuen Fensters, um die Verliernachricht anzuzeigen
+        verlorenFenster = ttk.TTkWindow(parent=self.root, title="aww", size=(20, 5))
+        verlorenLayout = ttk.TTkGridLayout()
+        verlorenFenster.setLayout(verlorenLayout)
+        verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
+        verlorenLayout.addWidget(verlorenLabel, 0, 0)
+        verlorenFenster.show()
+        print("Du hast verloren :(")
 
     def pruefe_Ob_Bingo(self):
         bingo = False
@@ -148,6 +160,9 @@ def server_process(pipe_name, pos, size):
     if not os.path.exists(pipe_name):
         os.mkfifo(pipe_name) # Funktion nicht für Windows
     
+    # Spieler in einer Liste speichern
+    clients = []
+    
     # Benannte Pipe im read()-Modus öffnen
     while True:
         with open(pipe_name, 'r') as pipe:
@@ -156,6 +171,15 @@ def server_process(pipe_name, pos, size):
             if message:
                 print(message)
                 logging.info(message)
+                if "ist beigetreten" in message:
+                    client_name = message.split()[0]
+                    clients.append(client_name)
+                elif "hat gewonnen" in message:
+                    for client in clients:
+                        if client not in message:
+                            with open(pipe_name, 'w') as pipe:
+                                pipe.write(f"{client}, Du hast verloren!\n")
+                                pipe.flush()
     
     
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
@@ -178,6 +202,21 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
         print(name + " ist beigetreten.")
         pipe.flush()
     
+    def lese_pipe():
+        if os.path.exists(pipe_name):
+            with open(pipe_name, 'r') as pipe:
+                message = pipe.readline().strip()
+                if message:
+                    if "hat gewonnen" in message and name not in message:
+                        spieler.zeige_verloren_nachricht()
+    
+    # Regelmäßig Pipe überprüfen
+    def timer_thread():
+        while True:
+            lese_pipe()
+            time.sleep(1)
+            
+    threading.Thread(target=timer_thread, daemon=True).start()        
     spieler.root.mainloop()
   
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
