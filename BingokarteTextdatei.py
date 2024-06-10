@@ -40,7 +40,7 @@ class Spieler:
         #root = ttk.TTk(layout=gridLayout)
         
         # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
-        felder_matrix = []
+        self.felder_matrix = []
         for x in range(felder_Anzahl):
             # Es wird eine Reihe der Matrix erstellt
             rows = []
@@ -60,9 +60,9 @@ class Spieler:
                     last_index = len(rows)-1
                     rows[last_index] = feld
 
-        # Die "fertige" Reihe wird nun der Matrix hinzugefügt
-        # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
-        self.felder_matrix.append(rows)
+            # Die "fertige" Reihe wird nun der Matrix hinzugefügt
+            # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
+            self.felder_matrix.append(rows)
     
         
         #root.mainloop()
@@ -111,6 +111,7 @@ class Spieler:
                 break 
     
         if bingo:
+            self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!!"
             logging.info("Bingo gefunden!")
             # Benannte Pipe im write()-Modus öffnen
