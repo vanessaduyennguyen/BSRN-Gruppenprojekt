@@ -5,6 +5,7 @@ import random
 import logging
 import threading
 import time
+from datetime import datetime
 from TermTk.TTkWidgets.button import TTkButton
 from TermTk.TTkWidgets.resizableframe import TTkResizableFrame
 
@@ -26,10 +27,21 @@ class Spieler:
         self.winLayout = ttk.TTkGridLayout()
         self.bingoFenster.setLayout(self.winLayout)
         self.felder_matrix = []
+        self.has_won = False
 
-    #logging startet
-    logging.basicConfig(filename='bingo_log.log', level=logging.DEBUG, 
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+    # Log file setup
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        log_filename = f"{timestamp}-bingo-{self.name}.txt"
+        self.logger = logging.getLogger(name)
+        handler = logging.FileHandler(log_filename)
+        formatter = logging.Formatter('%(asctime)s - %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.DEBUG)
+
+        # Start logging
+        self.logger.info("Start des Spiels")
+        self.logger.info(f"Größe des Spielfelds: {size}")
     
     def create_bingo_card(self, felder_Anzahl, words):
         """
@@ -68,7 +80,9 @@ class Spieler:
     
         
         #root.mainloop()
-        self.pruefe_Ob_Bingo()
+        self.bingo_button = TTkButton(text="Bingo", parent=self.root, border=True)
+        self.bingo_button.clicked.connect(self.bingo_check)
+        self.winLayout.addWidget(self.bingo_button, felder_Anzahl, 0, 1, felder_Anzahl)
         return self.felder_matrix
     
     # Die Methode soll das Feld in der Mitte ersetzen und automatisch markieren.
@@ -77,7 +91,6 @@ class Spieler:
     def JOKER_ausfüllen(feld):
         feld.setText("JOKER")
         feld.setChecked(True)
-        logging.info("Joker Feld gesetzt.")
         return feld
     
     def zeige_gewonnen_nachricht(self):
@@ -88,6 +101,7 @@ class Spieler:
         gewonnenLabel = ttk.TTkLabel(text=f"{self.name} hat gewonnen!!!")
         gewonnenLayout.addWidget(gewonnenLabel, 0, 0)
         gewonnenFenster.show()
+        self.logger.info("Sieg")
         print("Du hast gewonnen!!!")
         
     def zeige_verloren_nachricht(self):
@@ -98,8 +112,26 @@ class Spieler:
         verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
         verlorenLayout.addWidget(verlorenLabel, 0, 0)
         verlorenFenster.show()
+        self.logger.info("Verloren")
         print("Du hast verloren :(")
+    def on_button_clicked(self, button, word, x, y):
+        if not self.has_won and not button.isChecked():
+            button.setChecked(True)
+            self.logger.info(f"{word} ({x}/{y})")
 
+    def bingo_check(self):
+        if self.pruefe_Ob_Bingo():
+            self.has_won = True
+            self.zeige_gewonnen_nachricht()
+            message = f"{self.name} hat gewonnen!!!"
+            logging.info(message)
+            self.logger.info("Ende des Spiels")
+            # Benannte Pipe im write()-Modus öffnen
+            with open(self.pipe_name, 'w') as pipe:
+                pipe.write(message + "\n")
+                pipe.flush()
+            self.root.quit()
+    
     def pruefe_Ob_Bingo(self):
         bingo = False
         # Überprüfung, ob es ein Bingo diagonal von oben links nach unten rechts gibt
@@ -182,7 +214,10 @@ def server_process(pipe_name, pos, size):
                             with open(pipe_name, 'w') as pipe:
                                 pipe.write(f"{client}, Du hast verloren!\n")
                                 pipe.flush()
-    
+                    break
+
+    print("Das Spiel ist beendet.")
+    logging.info("Das Spiel ist beendet.")
     
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     """
@@ -210,7 +245,9 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
             if message:
                 if "hat gewonnen" in message and name not in message:
                     spieler.zeige_verloren_nachricht()
-    
+                    spieler.logger.info("Ende des Spiels")
+                    spieler.root.quit()
+                    
     # Regelmäßig Pipe überprüfen
     def timer_thread():
         while True:
