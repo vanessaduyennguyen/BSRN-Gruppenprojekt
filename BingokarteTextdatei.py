@@ -124,7 +124,7 @@ class Spieler:
             return False
         
     def start(self):
-        pass
+        self.root.mainloop()
 
 # Datei öffnen und einlesen der Zeilen in einer liste
 def open_file(filename):
@@ -132,7 +132,7 @@ def open_file(filename):
         logging.info(f"Datei {filename} geöffnet und gelesen") 
         return file.read().splitlines()
 
-def server_process(pipe_name, pos, size, felder_Anzahl, words):
+def server_process(pipe_name, pos, size):
     """
     Server-Prozess zur Verwaltung des Spiels und der Bingo-Karte des Servers
     
@@ -143,22 +143,20 @@ def server_process(pipe_name, pos, size, felder_Anzahl, words):
     words: Liste der Wörter für die Bingo-Karte
     """
     print("Das Bingospiel wurde gestartet.")
-    spieler = Spieler("server", pipe_name, pos, size)
-    spieler.create_bingo_card(felder_Anzahl, words)
     
     # Erstellen der benannten Pipe (wenn sie nicht schon existiert)
     if not os.path.exists(pipe_name):
         os.mkfifo(pipe_name) # Funktion nicht für Windows
     
     # Benannte Pipe im read()-Modus öffnen
-    with open(pipe_name, 'r') as pipe:
+    while True:
+        with open(pipe_name, 'r') as pipe:
             # Jede Zeile wird einzeln gelesen - daher "\n" wichtig
             message = pipe.readline().strip() 
             if message:
                 print(message)
                 logging.info(message)
     
-    spieler.root.mainloop()
     
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     """
@@ -211,7 +209,7 @@ def main():
         
         if args.server:
             # Startet den Server-Prozess wenn --server eingegeben wird
-            server_process(pipe_name, (0, 0), (50, 20), felder_Anzahl, words)
+            server_process(pipe_name, (0, 0), (50, 20))
         else:
             # Startet den Client-Prozess wenn --name eingegeben wird
             if args.name:
