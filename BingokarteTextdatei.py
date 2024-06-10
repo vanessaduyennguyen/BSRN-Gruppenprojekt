@@ -123,6 +123,8 @@ class Spieler:
                 break 
     
         if bingo:
+            TTkButton._checkable = False
+            TTkButton._checked = False
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!!"
             logging.info("Bingo gefunden!")
@@ -203,12 +205,11 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
         pipe.flush()
     
     def lese_pipe():
-        if os.path.exists(pipe_name):
-            with open(pipe_name, 'r') as pipe:
-                message = pipe.readline().strip()
-                if message:
-                    if "hat gewonnen" in message and name not in message:
-                        spieler.zeige_verloren_nachricht()
+        with open(pipe_name, 'r') as pipe:
+            message = pipe.readline().strip()
+            if message:
+                if "hat gewonnen" in message and name not in message:
+                    spieler.zeige_verloren_nachricht()
     
     # Regelmäßig Pipe überprüfen
     def timer_thread():
