@@ -80,7 +80,7 @@ class Spieler:
     
         
         #root.mainloop()
-        self.bingo_button = TTkButton(text="Bingo", parent=self.root, border=True)
+        self.bingo_button = TTkButton(text="Bingo", parent=self.bingoFenster, border=True)
         self.bingo_button.clicked.connect(self.bingo_check)
         self.winLayout.addWidget(self.bingo_button, felder_Anzahl, 0, 1, felder_Anzahl)
         return self.felder_matrix
@@ -121,6 +121,7 @@ class Spieler:
 
     def bingo_check(self):
         if self.pruefe_Ob_Bingo():
+            TTkButton._checkable = False
             self.has_won = True
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!!"
@@ -130,7 +131,7 @@ class Spieler:
             with open(self.pipe_name, 'w') as pipe:
                 pipe.write(message + "\n")
                 pipe.flush()
-            self.root.quit()
+            #self.root.quit()
     
     def pruefe_Ob_Bingo(self):
         bingo = False
@@ -155,15 +156,7 @@ class Spieler:
                 break 
     
         if bingo:
-            TTkButton._checkable = False
-            TTkButton._checked = False
-            self.zeige_gewonnen_nachricht()
-            message = f"{self.name} hat gewonnen!!!"
             logging.info("Bingo gefunden!")
-            # Benannte Pipe im write()-Modus öffnen
-            with open(self.pipe_name, 'w') as pipe:
-                pipe.write(message + "\n")
-                pipe.flush()
             return True
         else:
             logging.info("Kein Bingo gefunden.")
