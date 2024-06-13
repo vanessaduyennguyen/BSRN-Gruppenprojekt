@@ -83,6 +83,11 @@ class Spieler:
         self.bingo_button = TTkButton(text="Bingo", parent=self.bingoFenster, border=True)
         self.bingo_button.clicked.connect(self.bingo_check)
         self.winLayout.addWidget(self.bingo_button, felder_Anzahl, 0, 1, felder_Anzahl)
+
+        self.exit_button = TTkButton(text="Spiel beenden", parent=self.bingoFenster, border=True)
+        self.exit_button.clicked.connect(self.spiel_beenden)
+        self.winLayout.addWidget(self.exit_button, felder_Anzahl+1, 0, 1, felder_Anzahl)
+
         return self.felder_matrix
     
     # Die Methode soll das Feld in der Mitte ersetzen und automatisch markieren.
@@ -118,6 +123,12 @@ class Spieler:
         if not self.has_won and not button.isChecked():
             button.setChecked(True)
             self.logger.info(f"{word} ({x}/{y})")
+
+    def spiel_beenden(self):
+        message = f"Kein Gewinner"
+        logging.info(message)
+        self.logger.info("Ende des Spiels")
+        self.root.quit()
 
     def bingo_check(self):
         if self.pruefe_Ob_Bingo():
