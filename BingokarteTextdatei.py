@@ -119,6 +119,7 @@ class Spieler:
         verlorenFenster.show()
         self.logger.info("Verloren")
         print("Du hast verloren :(")
+
     def on_button_clicked(self, button, word, x, y):
         if not self.has_won and not button.isChecked():
             button.setChecked(True)
@@ -127,8 +128,12 @@ class Spieler:
     def spiel_beenden(self):
         message = f"Kein Gewinner"
         logging.info(message)
-        self.logger.info("Ende des Spiels")
+        self.logger.info("Das Spiel wurde beendet")
         self.root.quit()
+        # Benannte Pipe im write()-Modus öffnen
+        with open(self.pipe_name, 'w') as pipe:
+            pipe.write(message + "\n")
+            pipe.flush()
 
     def bingo_check(self):
         if self.pruefe_Ob_Bingo():
@@ -176,7 +181,7 @@ class Spieler:
     def start(self):
         self.root.mainloop()
 
-# Datei öffnen und einlesen der Zeilen in einer liste
+# Datei (wordfile.txt) öffnen und einlesen der Zeilen in einer liste
 def open_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         logging.info(f"Datei {filename} geöffnet und gelesen") 
@@ -212,12 +217,15 @@ def server_process(pipe_name, pos, size):
                 if "ist beigetreten" in message:
                     client_name = message.split()[0]
                     clients.append(client_name)
+                elif "Kein Gewinner" in message:
+                    break
                 elif "hat gewonnen" in message:
                     for client in clients:
                         if client not in message:
                             with open(pipe_name, 'w') as pipe:
                                 pipe.write(f"{client}, Du hast verloren!\n")
                                 pipe.flush()
+                                
                     break
 
     print("Das Spiel ist beendet.")
@@ -248,9 +256,10 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
             message = pipe.readline().strip()
             if message:
                 if "hat gewonnen" in message and name not in message:
+                    TTkButton._checkable = False
                     spieler.zeige_verloren_nachricht()
                     spieler.logger.info("Ende des Spiels")
-                    spieler.root.quit()
+                    # spieler.root.quit()
                     
     # Regelmäßig Pipe überprüfen
     def timer_thread():
