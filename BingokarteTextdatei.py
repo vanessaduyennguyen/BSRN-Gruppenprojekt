@@ -1,6 +1,7 @@
 import TermTk as ttk
 import argparse
 import os
+import sys
 import random
 import logging
 import threading
@@ -260,6 +261,19 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
             
     threading.Thread(target=timer_thread, daemon=True).start()        
     spieler.root.mainloop()
+
+
+    def server_process(pipe_name, pos, size):
+    # Placeholder code for server process
+    pass
+
+def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
+    # Placeholder code for client process
+    pass
+
+def open_file(filename):
+    # Placeholder code for opening and reading a file
+    pass
   
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
 def main():
@@ -274,11 +288,29 @@ def main():
     # Hiermit wird jeder Spieler (Client) - Prozess gestartet
     parser.add_argument("--name", type=str, help="Name des Spielers") 
     # Parst die Kommandozeilenargumente und speichert sie in 'args'
-    args = parser.parse_args()
 
-    # Weist die Argumente 'filename' und 'felder_Anzahl' den entsprechenden Variablen zu
+
+
+    try:
+        args = parser.parse_args()
+    except argparse.ArgumentError as e:
+        print(f"Fehler beim Verarbeiten der Argumente: {e}")
+        parser.print_help()
+        sys.exit(1)
+
+          # Weist die Argumente 'filename' und 'felder_Anzahl' den entsprechenden Variablen zu
     filename = args.wordfile
-    felder_Anzahl = args.felder_Anzahl
+    felder_Anzahl = args.felder_Anzahl 
+
+
+    if not filename:
+        parser.error("Bitte geben Sie den Dateinamen der Wortliste an.")
+    
+    if felder_Anzahl <= 0:
+        parser.error("Die Anzahl der Felder muss größer als Null sein.")
+
+    pipe_name = "/tmp/bingo_pipe"
+    
     
     # Name der Pipe festlegen
     pipe_name = "/tmp/bingo_pipe"
@@ -306,6 +338,7 @@ def main():
         logging.error(f"Die Datei {filename} existiert nicht.")
         print(f"Die Datei {filename} existiert nicht.")
         return
+    
         
 if __name__ == "__main__":
     logging.info("Bingo Programm gestartet.")
