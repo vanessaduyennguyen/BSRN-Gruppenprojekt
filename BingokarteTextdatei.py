@@ -29,19 +29,28 @@ class Spieler:
         self.felder_matrix = []
         self.has_won = False
 
-    # Log file setup
+        # Log file setup
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         log_filename = f"{timestamp}-bingo-{self.name}.txt"
+        
+        # Konfiguration des Loggers
         self.logger = logging.getLogger(name)
-        handler = logging.FileHandler(log_filename)
+        self.logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(message)s')
+        
+        # Handler für Datei hinzufügen
+        handler = logging.FileHandler(log_filename)
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-        self.logger.setLevel(logging.DEBUG)
-
+        
+        # Entfernen des Standard-Stream-Handlers (Terminalausgabe) damit es nicht im Terminal angezeigt wird
+        root_logger = logging.getLogger()
+        if root_logger.hasHandlers():
+            for h in root_logger.handlers:
+                root_logger.removeHandler(h)
+        
         # Start logging
         self.logger.info("Start des Spiels")
-        self.logger.info(f"Größe des Spielfelds: {size}")
     
     def create_bingo_card(self, felder_Anzahl, words):
         """
@@ -50,8 +59,8 @@ class Spieler:
         felder_Anzahl: Anzahl der Felder (NxN)
         words: Liste der Wörter für die Bingo-Karte
         """
-        #gridLayout = ttk.TTkGridLayout(columnMinHeight=0,columnMinWidth=0)
-        #root = ttk.TTk(layout=gridLayout)
+        self.felder_Anzahl = felder_Anzahl
+        self.logger.info(f"Größe des Spielfelds: {felder_Anzahl} / {felder_Anzahl}")
         
         # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
         self.felder_matrix = []
@@ -62,13 +71,16 @@ class Spieler:
                 word = random.choice(words)
                 words.remove(word)
                 feld = ttk.TTkButton(border=True, text=word, checked = False, checkable = True)
-                #gridLayout.addWidget(feld, row = x, col = y, rowspan=1, colspan=1, direction=3)
+                # Verbindung der Methode pruefe_Ob_Bingo mit dem Klickereignis des Feldes
                 feld.clicked.connect(self.pruefe_Ob_Bingo)
+                feld.clicked.connect(self.on_button_clicked_wrapper(feld, word, x, y))
+                # Feld zum Layout hinzufügen
                 self.winLayout.addWidget(feld, x, y)
                 # Zu der Reihe der Matrix werden bei jedem Durchlauf der Schleife TTkButton-Objekte hinzugefügt (insgesamt felder_Anzahl-Objekte).
                 rows.append(feld)
 
                 if felder_Anzahl %2 != 0 and x == (felder_Anzahl//2) and y == (felder_Anzahl//2):
+                    # Jokerfeld erstellen
                     feld = self.JOKER_ausfüllen(feld)
                     # Der Index von dem altem Feld(der zuletzt genutzte Index) wird durch das neue Feld (mit den "neuen Attributen") ersetzt.
                     last_index = len(rows)-1
@@ -78,8 +90,7 @@ class Spieler:
             # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
             self.felder_matrix.append(rows)
     
-        
-        #root.mainloop()
+        # Bingo- und Exit-Buttons zum Layout hinzufügen
         self.bingo_button = TTkButton(text="Bingo", parent=self.bingoFenster, border=True)
         self.bingo_button.clicked.connect(self.bingo_check)
         self.winLayout.addWidget(self.bingo_button, felder_Anzahl, 0, 1, felder_Anzahl)
@@ -111,7 +122,7 @@ class Spieler:
         
     def zeige_verloren_nachricht(self):
         # Erstellen eines neuen Fensters, um die Verliernachricht anzuzeigen
-        verlorenFenster = ttk.TTkWindow(parent=self.root, title="aww", size=(20, 5))
+        verlorenFenster = ttk.TTkWindow(parent=self.root, title="Verloren", size=(20, 5))
         verlorenLayout = ttk.TTkGridLayout()
         verlorenFenster.setLayout(verlorenLayout)
         verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
@@ -120,11 +131,19 @@ class Spieler:
         self.logger.info("Verloren")
         print("Du hast verloren :(")
 
+    # Wrapper-Methode für das Klickereignis eines Feldes
+    def on_button_clicked_wrapper(self, button, word, x, y):
+        def wrapper():
+            self.on_button_clicked(button, word, x, y)
+        return wrapper
+
+    # Ancklicken eines Wortes in die Logdatei schreiben
     def on_button_clicked(self, button, word, x, y):
-        if not self.has_won and not button.isChecked():
-            button.setChecked(True)
+        if not self.has_won and button.isChecked():
+            #button.setChecked(True)
             self.logger.info(f"{word} ({x}/{y})")
 
+    # Methode zum Beenden des Spiels und Schreiben einer Nachricht in die Pipe
     def spiel_beenden(self):
         message = f"Kein Gewinner"
         logging.info(message)
@@ -135,6 +154,7 @@ class Spieler:
             pipe.write(message + "\n")
             pipe.flush()
 
+    # Überprüft, ob ein Bingo vorliegt und führt entsprechende Aktionen aus
     def bingo_check(self):
         if self.pruefe_Ob_Bingo():
             TTkButton._checkable = False
@@ -172,10 +192,8 @@ class Spieler:
                 break 
     
         if bingo:
-            logging.info("Bingo gefunden!")
             return True
         else:
-            logging.info("Kein Bingo gefunden.")
             return False
         
     def start(self):
@@ -201,7 +219,8 @@ def server_process(pipe_name, pos, size):
     
     # Erstellen der benannten Pipe (wenn sie nicht schon existiert)
     if not os.path.exists(pipe_name):
-        os.mkfifo(pipe_name) # Funktion nicht für Windows
+        # Erstellen mit First In First Out
+        os.mkfifo(pipe_name)
     
     # Spieler in einer Liste speichern
     clients = []
@@ -229,7 +248,6 @@ def server_process(pipe_name, pos, size):
                     break
 
     print("Das Spiel ist beendet.")
-    logging.info("Das Spiel ist beendet.")
     
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     """
@@ -251,23 +269,30 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
         print(name + " ist beigetreten.")
         pipe.flush()
     
+    # Lesen der Nachrichten in der Pipe
     def lese_pipe():
         with open(pipe_name, 'r') as pipe:
             message = pipe.readline().strip()
             if message:
+                # Überprüfen, ob ein Gewinner gemeldet wurde und ob es nicht der aktuelle Spieler ist
                 if "hat gewonnen" in message and name not in message:
+                    # Setze den Check-Zustand der Buttons auf False
                     TTkButton._checkable = False
+                    # Zeige eine Nachricht über die Niederlage des Spielers an
                     spieler.zeige_verloren_nachricht()
+                    # Logge das Ende des Spiels
                     spieler.logger.info("Ende des Spiels")
-                    # spieler.root.quit()
                     
-    # Regelmäßig Pipe überprüfen
+    # Thread-Funktion, um regelmäßig die Pipe auf Nachrichten zu überprüfen.
     def timer_thread():
         while True:
             lese_pipe()
             time.sleep(1)
-            
-    threading.Thread(target=timer_thread, daemon=True).start()        
+    
+    # Starte den Thread als Daemon       
+    threading.Thread(target=timer_thread, daemon=True).start() 
+    
+    # Starte die Hauptfenster-Schleife      
     spieler.root.mainloop()
   
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
@@ -317,8 +342,6 @@ def main():
         return
         
 if __name__ == "__main__":
-    logging.info("Bingo Programm gestartet.")
     main()
-    logging.info("Bingo Programm beendet.")
 
 
