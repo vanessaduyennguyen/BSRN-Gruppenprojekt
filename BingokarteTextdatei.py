@@ -95,7 +95,7 @@ class Spieler:
         self.bingo_button.clicked.connect(self.bingo_check)
         self.winLayout.addWidget(self.bingo_button, felder_Anzahl, 0, 1, felder_Anzahl)
 
-        self.exit_button = TTkButton(text="Spiel beenden", parent=self.bingoFenster, border=True)
+        self.exit_button = TTkButton(text="Spiel beenden", parent=self.bingoFenster, border=True, checkable = True)
         self.exit_button.clicked.connect(self.spiel_beenden)
         self.winLayout.addWidget(self.exit_button, felder_Anzahl+1, 0, 1, felder_Anzahl)
 
@@ -159,6 +159,8 @@ class Spieler:
         if self.pruefe_Ob_Bingo():
             TTkButton._checkable = False
             self.exit_button._checkable = False
+            self.exit_button.setDisabled()
+            self.bingo_button.setDisabled()
             self.has_won = True
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!!"
