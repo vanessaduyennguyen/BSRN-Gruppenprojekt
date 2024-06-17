@@ -158,6 +158,7 @@ class Spieler:
     def bingo_check(self):
         if self.pruefe_Ob_Bingo():
             TTkButton._checkable = False
+            self.exit_button._checkable = False
             self.has_won = True
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!!"
