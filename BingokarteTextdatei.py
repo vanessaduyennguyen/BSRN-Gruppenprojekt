@@ -271,32 +271,30 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
         pipe.write(f"{name} ist beigetreten.\n")
         print(name + " ist beigetreten.")
         pipe.flush()
+    spieler.root.mainloop()
     
     # Lesen der Nachrichten in der Pipe
-    def lese_pipe():
-        with open(pipe_name, 'r') as pipe:
-            message = pipe.readline().strip()
-            if message:
-                # Überprüfen, ob ein Gewinner gemeldet wurde und ob es nicht der aktuelle Spieler ist
-                if "hat gewonnen" in message and name not in message:
-                    # Setze den Check-Zustand der Buttons auf False
-                    TTkButton._checkable = False
-                    # Zeige eine Nachricht über die Niederlage des Spielers an
-                    spieler.zeige_verloren_nachricht()
-                    # Logge das Ende des Spiels
-                    spieler.logger.info("Ende des Spiels")
+    with open(pipe_name, 'r') as pipe:
+        message = pipe.readline().strip()
+        if message:
+            # Überprüfen, ob ein Gewinner gemeldet wurde und ob es nicht der aktuelle Spieler ist
+            if "hat gewonnen" in message and name not in message:
+                # Setze den Check-Zustand der Buttons auf False
+                TTkButton._checkable = False
+                # Zeige eine Nachricht über die Niederlage des Spielers an
+                spieler.zeige_verloren_nachricht()
+                # Logge das Ende des Spiels
+                spieler.logger.info("Ende des Spiels")
                     
     # Thread-Funktion, um regelmäßig die Pipe auf Nachrichten zu überprüfen.
-    def timer_thread():
-        while True:
-            lese_pipe()
-            time.sleep(1)
-    
+    '''
+    hier muss der code noch bearbeitet werden
+    '''
     # Starte den Thread als Daemon       
-    threading.Thread(target=timer_thread, daemon=True).start() 
+    #threading.Thread(target=timer_thread, daemon=True).start() 
+    # Starte die Hauptfenster-Schleife
     
-    # Starte die Hauptfenster-Schleife      
-    spieler.root.mainloop()
+    
   
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
 def main():
