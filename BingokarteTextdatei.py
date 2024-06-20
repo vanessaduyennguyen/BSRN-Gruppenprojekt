@@ -32,7 +32,7 @@ class Spieler:
             self.felder_matrix = []
             self.has_won = False
 
-<<<<<<< HEAD
+
             # Logdatei einrichten
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             log_filename = f"{timestamp}-bingo-{self.name}.txt"
@@ -56,7 +56,7 @@ class Spieler:
             print(f"Fehler beim Initialisieren des Spielers: {e}")
             sys.exit(1)
 
-=======
+
         # Log file setup
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         log_filename = f"{timestamp}-bingo-{self.name}.txt"
@@ -80,7 +80,7 @@ class Spieler:
         # Start logging
         self.logger.info("Start des Spiels")
     
->>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
+
     def create_bingo_card(self, felder_Anzahl, words):
         """
         Erstellt die Bingo-Karte mit der angegebenen Anzahl von Feldern und Wörtern
@@ -88,7 +88,6 @@ class Spieler:
         felder_Anzahl: Anzahl der Felder (NxN)
         words: Liste der Wörter für die Bingo-Karte
         """
-<<<<<<< HEAD
         try:
             # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
             self.felder_matrix = []
@@ -133,7 +132,7 @@ class Spieler:
         except Exception as e:
             # Allgemeiner Fehler
             print(f"Fehler beim Erstellen der Bingo-Karte: {e}")
-=======
+
         self.felder_Anzahl = felder_Anzahl
         self.logger.info(f"Größe des Spielfelds: {felder_Anzahl} / {felder_Anzahl}")
         
@@ -173,7 +172,7 @@ class Spieler:
         self.exit_button = TTkButton(text="Spiel beenden", parent=self.bingoFenster, border=True, checkable = True)
         self.exit_button.clicked.connect(self.spiel_beenden)
         self.winLayout.addWidget(self.exit_button, felder_Anzahl+1, 0, 1, felder_Anzahl)
->>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
+
 
     @staticmethod
     def JOKER_ausfüllen(feld):
@@ -205,12 +204,11 @@ class Spieler:
         self.logger.info("Verloren")
         print("Du hast verloren :(")
 
-<<<<<<< HEAD
     def on_button_clicked(self, button, word, x, y):
         # Methode wird aufgerufen, wenn ein Button geklickt wird
         if not self.has_won and not button.isChecked():
             button.setChecked(True)
-=======
+
     # Wrapper-Methode für das Klickereignis eines Feldes
     def on_button_clicked_wrapper(self, button, word, x, y):
         def wrapper():
@@ -221,7 +219,7 @@ class Spieler:
     def on_button_clicked(self, button, word, x, y):
         if not self.has_won and button.isChecked():
             #button.setChecked(True)
->>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
+
             self.logger.info(f"{word} ({x}/{y})")
 
     # Methode zum Beenden des Spiels und Schreiben einer Nachricht in die Pipe
@@ -281,10 +279,7 @@ class Spieler:
         # Startet das Spiel
         self.root.mainloop()
 
-<<<<<<< HEAD
-=======
 # Datei (wordfile.txt) öffnen und einlesen der Zeilen in einer liste
->>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
 def open_file(filename):
     # Datei öffnen und einlesen der Zeilen in einer Liste
     try:
@@ -309,44 +304,6 @@ def server_process(pipe_name, pos, size):
     pos: Position des Fensters
     size: Größe des Fensters
     """
-<<<<<<< HEAD
-    try:
-        print("Das Bingospiel wurde gestartet.")
-
-        if not os.path.exists(pipe_name):
-            os.mkfifo(pipe_name)
-
-        clients = []
-
-        while True:
-            with open(pipe_name, 'r') as pipe:
-                message = pipe.readline().strip()
-                if message:
-                    print(message)
-                    logging.info(message)
-                    if "ist beigetreten" in message:
-                        client_name = message.split()[0]
-                        clients.append(client_name)
-                    elif "hat gewonnen" in message:
-                        for client in clients:
-                            if client not in message:
-                                with open(pipe_name, 'w') as pipe:
-                                    pipe.write(f"{client}, Du hast verloren!\n")
-                                    pipe.flush()
-                        break
-
-        print("Das Spiel ist beendet.")
-        logging.info("Das Spiel ist beendet.")
-    except OSError as e:
-        # Fehler beim Arbeiten mit der Pipe
-        print(f"OSError: {e}")
-        sys.exit(1)
-    except Exception as e:
-        # Allgemeiner Fehler im Server-Prozess
-        print(f"Fehler im Server-Prozess: {e}")
-        sys.exit(1)
-
-=======
     print("Das Bingospiel wurde gestartet.")
     
     # Erstellen der benannten Pipe (wenn sie nicht schon existiert)
@@ -381,7 +338,6 @@ def server_process(pipe_name, pos, size):
 
     print("Das Spiel ist beendet.")
     
->>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     """
     Client-Prozess zur Erstellung eines Spielers und dessen Bingo-Karte.
@@ -393,7 +349,7 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     felder_Anzahl: Anzahl der Felder (NxN)
     words: Liste der Wörter für die Bingo-Karte
     """
-<<<<<<< HEAD
+
     try:
         spieler = Spieler(name, pipe_name, pos, size)
         spieler.create_bingo_card(felder_Anzahl, words)
@@ -426,7 +382,7 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
         print(f"Fehler im Client-Prozess: {e}")
         sys.exit(1)
 
-=======
+
     spieler = Spieler(name, pipe_name, pos, size)
     spieler.create_bingo_card(felder_Anzahl, words)
     
@@ -461,7 +417,7 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     
   
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
->>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
+
 def main():
     # Kommandozeilenargumente mit dem argparse-Modul hinzufügen
     parser = argparse.ArgumentParser(description="Erstellen einer Bingo-Karte.")
@@ -520,9 +476,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-<<<<<<< HEAD
+    logging.info("Bingo Programm gestartet.")
     logging.info("Bingo Programm beendet.")
-=======
+    logging.info("Bingo Programm beendet.")
 
-
->>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
