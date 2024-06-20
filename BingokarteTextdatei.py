@@ -32,6 +32,7 @@ class Spieler:
             self.felder_matrix = []
             self.has_won = False
 
+<<<<<<< HEAD
             # Logdatei einrichten
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             log_filename = f"{timestamp}-bingo-{self.name}.txt"
@@ -55,6 +56,31 @@ class Spieler:
             print(f"Fehler beim Initialisieren des Spielers: {e}")
             sys.exit(1)
 
+=======
+        # Log file setup
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        log_filename = f"{timestamp}-bingo-{self.name}.txt"
+        
+        # Konfiguration des Loggers
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(message)s')
+        
+        # Handler für Datei hinzufügen
+        handler = logging.FileHandler(log_filename)
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        
+        # Entfernen des Standard-Stream-Handlers (Terminalausgabe) damit es nicht im Terminal angezeigt wird
+        root_logger = logging.getLogger()
+        if root_logger.hasHandlers():
+            for h in root_logger.handlers:
+                root_logger.removeHandler(h)
+        
+        # Start logging
+        self.logger.info("Start des Spiels")
+    
+>>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
     def create_bingo_card(self, felder_Anzahl, words):
         """
         Erstellt die Bingo-Karte mit der angegebenen Anzahl von Feldern und Wörtern
@@ -62,6 +88,7 @@ class Spieler:
         felder_Anzahl: Anzahl der Felder (NxN)
         words: Liste der Wörter für die Bingo-Karte
         """
+<<<<<<< HEAD
         try:
             # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
             self.felder_matrix = []
@@ -106,6 +133,47 @@ class Spieler:
         except Exception as e:
             # Allgemeiner Fehler
             print(f"Fehler beim Erstellen der Bingo-Karte: {e}")
+=======
+        self.felder_Anzahl = felder_Anzahl
+        self.logger.info(f"Größe des Spielfelds: {felder_Anzahl} / {felder_Anzahl}")
+        
+        # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
+        self.felder_matrix = []
+        for x in range(felder_Anzahl):
+            # Es wird eine Reihe der Matrix erstellt
+            rows = []
+            for y in range(felder_Anzahl):
+                word = random.choice(words)
+                words.remove(word)
+                feld = ttk.TTkButton(border=True, text=word, checked = False, checkable = True)
+                # Verbindung der Methode pruefe_Ob_Bingo mit dem Klickereignis des Feldes
+                feld.clicked.connect(self.pruefe_Ob_Bingo)
+                feld.clicked.connect(self.on_button_clicked_wrapper(feld, word, x, y))
+                # Feld zum Layout hinzufügen
+                self.winLayout.addWidget(feld, x, y)
+                # Zu der Reihe der Matrix werden bei jedem Durchlauf der Schleife TTkButton-Objekte hinzugefügt (insgesamt felder_Anzahl-Objekte).
+                rows.append(feld)
+
+                if felder_Anzahl %2 != 0 and x == (felder_Anzahl//2) and y == (felder_Anzahl//2):
+                    # Jokerfeld erstellen
+                    feld = self.JOKER_ausfüllen(feld)
+                    # Der Index von dem altem Feld(der zuletzt genutzte Index) wird durch das neue Feld (mit den "neuen Attributen") ersetzt.
+                    last_index = len(rows)-1
+                    rows[last_index] = feld
+
+            # Die "fertige" Reihe wird nun der Matrix hinzugefügt
+            # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
+            self.felder_matrix.append(rows)
+    
+        # Bingo- und Exit-Buttons zum Layout hinzufügen
+        self.bingo_button = TTkButton(text="Bingo", parent=self.bingoFenster, border=True)
+        self.bingo_button.clicked.connect(self.bingo_check)
+        self.winLayout.addWidget(self.bingo_button, felder_Anzahl, 0, 1, felder_Anzahl)
+
+        self.exit_button = TTkButton(text="Spiel beenden", parent=self.bingoFenster, border=True, checkable = True)
+        self.exit_button.clicked.connect(self.spiel_beenden)
+        self.winLayout.addWidget(self.exit_button, felder_Anzahl+1, 0, 1, felder_Anzahl)
+>>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
 
     @staticmethod
     def JOKER_ausfüllen(feld):
@@ -128,7 +196,7 @@ class Spieler:
 
     def zeige_verloren_nachricht(self):
         # Erstellen eines neuen Fensters, um die Verliernachricht anzuzeigen
-        verlorenFenster = ttk.TTkWindow(parent=self.root, title="aww", size=(20, 5))
+        verlorenFenster = ttk.TTkWindow(parent=self.root, title="Verloren", size=(20, 5))
         verlorenLayout = ttk.TTkGridLayout()
         verlorenFenster.setLayout(verlorenLayout)
         verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
@@ -137,23 +205,45 @@ class Spieler:
         self.logger.info("Verloren")
         print("Du hast verloren :(")
 
+<<<<<<< HEAD
     def on_button_clicked(self, button, word, x, y):
         # Methode wird aufgerufen, wenn ein Button geklickt wird
         if not self.has_won and not button.isChecked():
             button.setChecked(True)
+=======
+    # Wrapper-Methode für das Klickereignis eines Feldes
+    def on_button_clicked_wrapper(self, button, word, x, y):
+        def wrapper():
+            self.on_button_clicked(button, word, x, y)
+        return wrapper
+
+    # Ancklicken eines Wortes in die Logdatei schreiben
+    def on_button_clicked(self, button, word, x, y):
+        if not self.has_won and button.isChecked():
+            #button.setChecked(True)
+>>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
             self.logger.info(f"{word} ({x}/{y})")
 
+    # Methode zum Beenden des Spiels und Schreiben einer Nachricht in die Pipe
     def spiel_beenden(self):
         # Beendet das Spiel
         message = f"Kein Gewinner"
         logging.info(message)
-        self.logger.info("Ende des Spiels")
+        self.logger.info("Das Spiel wurde beendet")
         self.root.quit()
+        # Benannte Pipe im write()-Modus öffnen
+        with open(self.pipe_name, 'w') as pipe:
+            pipe.write(message + "\n")
+            pipe.flush()
 
+    # Überprüft, ob ein Bingo vorliegt und führt entsprechende Aktionen aus
     def bingo_check(self):
         # Überprüft, ob ein Bingo vorliegt
         if self.pruefe_Ob_Bingo():
             TTkButton._checkable = False
+            self.exit_button._checkable = False
+            self.exit_button.setDisabled()
+            self.bingo_button.setDisabled()
             self.has_won = True
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!!"
@@ -183,16 +273,18 @@ class Spieler:
                 break
 
         if bingo:
-            logging.info("Bingo gefunden!")
             return True
         else:
-            logging.info("Kein Bingo gefunden.")
             return False
 
     def start(self):
         # Startet das Spiel
         self.root.mainloop()
 
+<<<<<<< HEAD
+=======
+# Datei (wordfile.txt) öffnen und einlesen der Zeilen in einer liste
+>>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
 def open_file(filename):
     # Datei öffnen und einlesen der Zeilen in einer Liste
     try:
@@ -217,6 +309,7 @@ def server_process(pipe_name, pos, size):
     pos: Position des Fensters
     size: Größe des Fensters
     """
+<<<<<<< HEAD
     try:
         print("Das Bingospiel wurde gestartet.")
 
@@ -253,6 +346,42 @@ def server_process(pipe_name, pos, size):
         print(f"Fehler im Server-Prozess: {e}")
         sys.exit(1)
 
+=======
+    print("Das Bingospiel wurde gestartet.")
+    
+    # Erstellen der benannten Pipe (wenn sie nicht schon existiert)
+    if not os.path.exists(pipe_name):
+        # Erstellen mit First In First Out
+        os.mkfifo(pipe_name)
+    
+    # Spieler in einer Liste speichern
+    clients = []
+    
+    # Benannte Pipe im read()-Modus öffnen
+    while True:
+        with open(pipe_name, 'r') as pipe:
+            # Jede Zeile wird einzeln gelesen - daher "\n" wichtig
+            message = pipe.readline().strip() 
+            if message:
+                print(message)
+                logging.info(message)
+                if "ist beigetreten" in message:
+                    client_name = message.split()[0]
+                    clients.append(client_name)
+                elif "Kein Gewinner" in message:
+                    break
+                elif "hat gewonnen" in message:
+                    for client in clients:
+                        if client not in message:
+                            with open(pipe_name, 'w') as pipe:
+                                pipe.write(f"{client}, Du hast verloren!\n")
+                                pipe.flush()
+                                
+                    break
+
+    print("Das Spiel ist beendet.")
+    
+>>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     """
     Client-Prozess zur Erstellung eines Spielers und dessen Bingo-Karte.
@@ -264,6 +393,7 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     felder_Anzahl: Anzahl der Felder (NxN)
     words: Liste der Wörter für die Bingo-Karte
     """
+<<<<<<< HEAD
     try:
         spieler = Spieler(name, pipe_name, pos, size)
         spieler.create_bingo_card(felder_Anzahl, words)
@@ -296,6 +426,42 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
         print(f"Fehler im Client-Prozess: {e}")
         sys.exit(1)
 
+=======
+    spieler = Spieler(name, pipe_name, pos, size)
+    spieler.create_bingo_card(felder_Anzahl, words)
+    
+    # Öffnen der Pipe zum Senden der Beitrittsnachricht (write-Modus)
+    with open(pipe_name, 'w') as pipe:
+        pipe.write(f"{name} ist beigetreten.\n")
+        print(name + " ist beigetreten.")
+        pipe.flush()
+    spieler.root.mainloop()
+    
+    # Lesen der Nachrichten in der Pipe
+    with open(pipe_name, 'r') as pipe:
+        message = pipe.readline().strip()
+        if message:
+            # Überprüfen, ob ein Gewinner gemeldet wurde und ob es nicht der aktuelle Spieler ist
+            if "hat gewonnen" in message and name not in message:
+                # Setze den Check-Zustand der Buttons auf False
+                TTkButton._checkable = False
+                # Zeige eine Nachricht über die Niederlage des Spielers an
+                spieler.zeige_verloren_nachricht()
+                # Logge das Ende des Spiels
+                spieler.logger.info("Ende des Spiels")
+                    
+    # Thread-Funktion, um regelmäßig die Pipe auf Nachrichten zu überprüfen.
+    '''
+    hier muss der code noch bearbeitet werden
+    '''
+    # Starte den Thread als Daemon       
+    #threading.Thread(target=timer_thread, daemon=True).start() 
+    # Starte die Hauptfenster-Schleife
+    
+    
+  
+# Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
+>>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
 def main():
     # Kommandozeilenargumente mit dem argparse-Modul hinzufügen
     parser = argparse.ArgumentParser(description="Erstellen einer Bingo-Karte.")
@@ -353,6 +519,10 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    logging.info("Bingo Programm gestartet.")
     main()
+<<<<<<< HEAD
     logging.info("Bingo Programm beendet.")
+=======
+
+
+>>>>>>> 80d54f4127c603ee22e16e27e298c6255d910217
