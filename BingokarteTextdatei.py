@@ -438,5 +438,6 @@ if __name__ == "__main__":
     main()
     logging.info("Bingo Programm gestartet.")
     logging.info("Bingo Programm beendet.")
+    logging.info("Bingo Programm beendet.")
     
 
