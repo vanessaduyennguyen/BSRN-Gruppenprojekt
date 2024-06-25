@@ -130,22 +130,28 @@ class Spieler:
 
     def zeige_gewonnen_nachricht(self):
         # Erstellen eines neuen Fensters, um die Gewinnnachricht anzuzeigen
-        gewonnenFenster = ttk.TTkWindow(parent=self.root, title="Bingo!", size=(20, 5))
-        gewonnenLayout = ttk.TTkGridLayout()
+        gewonnenFenster = ttk.TTkWindow(parent=self.root, title="Bingo!", size=(30, 5))
+        # Positioniere das Fenster in der oberen rechten Ecke des Terminals
+        terminal_width = self.root.width()
+        gewonnenFenster.move(terminal_width - 50, 0)
+        gewonnenLayout = ttk.TTkLayout()
         gewonnenFenster.setLayout(gewonnenLayout)
         gewonnenLabel = ttk.TTkLabel(text=f"{self.name} hat gewonnen!!!")
-        gewonnenLayout.addWidget(gewonnenLabel, 0, 0)
+        gewonnenLayout.addWidget(gewonnenLabel)
         gewonnenFenster.show()
         self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Sieg")
         print("Du hast gewonnen!!!")
 
     def zeige_verloren_nachricht(self):
         # Erstellen eines neuen Fensters, um die Verliernachricht anzuzeigen
-        verlorenFenster = ttk.TTkWindow(parent=self.root, title="Verloren", size=(20, 5))
-        verlorenLayout = ttk.TTkGridLayout()
+        verlorenFenster = ttk.TTkWindow(parent=self.root, title="Verloren", size=(30, 5))
+        # Positioniere das Fenster in der oberen rechten Ecke des Terminals
+        terminal_width = self.root.width()
+        verlorenFenster.move(terminal_width - 50, 0)
+        verlorenLayout = ttk.TTkLayout()
         verlorenFenster.setLayout(verlorenLayout)
         verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
-        verlorenLayout.addWidget(verlorenLabel, 0, 0)
+        verlorenLayout.addWidget(verlorenLabel)
         verlorenFenster.show()
         self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Verloren")
         print("Du hast verloren :(")
