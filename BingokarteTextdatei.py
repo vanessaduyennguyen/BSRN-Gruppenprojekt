@@ -2,6 +2,7 @@ import TermTk as ttk
 import argparse
 import os
 import sys
+import select
 import random
 import logging
 import threading
@@ -219,17 +220,14 @@ class Spieler:
     def on_button_clicked(self, button, word, x, y):
         if not self.has_won and button.isChecked():
             #button.setChecked(True)
-
             self.logger.info(f"{word} ({x}/{y})")
 
     # Methode zum Beenden des Spiels und Schreiben einer Nachricht in die Pipe
     def spiel_beenden(self):
         # Beendet das Spiel
-        message = f"Kein Gewinner"
-        logging.info(message)
-        self.logger.info("Das Spiel wurde beendet")
+        message = "Kein Gewinner"
+        self.logger.info(message)
         self.root.quit()
-        # Benannte Pipe im write()-Modus öffnen
         with open(self.pipe_name, 'w') as pipe:
             pipe.write(message + "\n")
             pipe.flush()
@@ -245,7 +243,8 @@ class Spieler:
             self.has_won = True
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!!"
-            logging.info(message)
+            self.logger.info(message)
+            #logging.info(message)
             self.logger.info("Ende des Spiels")
             with open(self.pipe_name, 'w') as pipe:
                 pipe.write(message + "\n")
@@ -314,106 +313,67 @@ def server_process(pipe_name, pos, size):
     # Spieler in einer Liste speichern
     clients = []
     
-    # Benannte Pipe im read()-Modus öffnen
-    while True:
-        with open(pipe_name, 'r') as pipe:
-            # Jede Zeile wird einzeln gelesen - daher "\n" wichtig
-            message = pipe.readline().strip() 
-            if message:
-                print(message)
-                logging.info(message)
-                if "ist beigetreten" in message:
-                    client_name = message.split()[0]
-                    clients.append(client_name)
-                elif "Kein Gewinner" in message:
-                    break
-                elif "hat gewonnen" in message:
-                    for client in clients:
-                        if client not in message:
-                            with open(pipe_name, 'w') as pipe:
-                                pipe.write(f"{client}, Du hast verloren!\n")
-                                pipe.flush()
-                                
-                    break
-
-    print("Das Spiel ist beendet.")
+    pipe_in = open(pipe_name, 'r')
+    pipe_out = open(pipe_name, 'w')  # Nur zum Schreiben öffnen
     
-def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
-    """
-    Client-Prozess zur Erstellung eines Spielers und dessen Bingo-Karte.
-    
-    name: Name des Spielers
-    pipe_name: Name der benannten Pipe zur Kommunikation
-    pos: Position des Fensters
-    size: Größe des Fensters
-    felder_Anzahl: Anzahl der Felder (NxN)
-    words: Liste der Wörter für die Bingo-Karte
-    """
-
     try:
-        spieler = Spieler(name, pipe_name, pos, size)
-        spieler.create_bingo_card(felder_Anzahl, words)
-
-        # Öffnen der Pipe zum Senden der Beitrittsnachricht (write-Modus)
-        with open(pipe_name, 'w') as pipe:
-            pipe.write(f"{name} ist beigetreten.\n")
-            print(name + " ist beigetreten.")
-            pipe.flush()
-
-        def lese_pipe():
-            with open(pipe_name, 'r') as pipe:
-                message = pipe.readline().strip()
+        while True:
+            rlist, _, _ = select.select([pipe_in], [], [], 0.5)
+            if pipe_in in rlist:
+                message = pipe_in.readline().strip()
                 if message:
-                    if "hat gewonnen" in message and name not in message:
-                        spieler.zeige_verloren_nachricht()
-                        spieler.logger.info("Ende des Spiels")
-                        spieler.root.quit()
+                    print(message)
+                    if "ist beigetreten" in message:
+                        client_name = message.split()[0]
+                        clients.append(client_name)
+                    elif "hat gewonnen" in message:
+                        winner = message.split()[0]
+                        for client in clients:
+                            if client != winner:
+                                pipe_out.write(f"{client}, Du hast verloren!\n")
+                                pipe_out.flush()
+    finally:
+        pipe_in.close()
+        pipe_out.close()
+                  
+               
+    
 
-        def timer_thread():
-            # Regelmäßig Pipe überprüfen
-            while True:
-                lese_pipe()
-                time.sleep(1)
-
-        threading.Thread(target=timer_thread, daemon=True).start()
-        spieler.root.mainloop()
-    except Exception as e:
-        # Allgemeiner Fehler im Client-Prozess
-        print(f"Fehler im Client-Prozess: {e}")
-        sys.exit(1)
-
-
+def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     spieler = Spieler(name, pipe_name, pos, size)
     spieler.create_bingo_card(felder_Anzahl, words)
-    
-    # Öffnen der Pipe zum Senden der Beitrittsnachricht (write-Modus)
+
     with open(pipe_name, 'w') as pipe:
         pipe.write(f"{name} ist beigetreten.\n")
-        print(name + " ist beigetreten.")
         pipe.flush()
+
+    def lese_pipe():
+        try:
+            while True:
+                with open(pipe_name, 'r') as pipe:
+                    message = pipe.readline().strip()
+                    if message:
+                        if "hat gewonnen" in message and name in message:
+                            spieler.zeige_gewonnen_nachricht()
+                            spieler.logger.info("Ende des Spiels")
+                            break
+                        elif "hat gewonnen" in message and name not in message:
+                            spieler.zeige_verloren_nachricht()
+                            spieler.logger.info("Ende des Spiels")
+                            break
+                        elif "Du hast verloren!" in message and name in message:
+                            spieler.zeige_verloren_nachricht()
+                            spieler.logger.info("Ende des Spiels")
+                            break
+        except IOError as e:
+            print(f"Fehler beim Lesen der Pipe: {e}")
+
+    def timer_thread():
+        lese_pipe()
+        spieler.root.quit()  # Schließt das GUI-Fenster, wenn die Pipe-Schleife endet
+
+    threading.Thread(target=timer_thread, daemon=True).start()
     spieler.root.mainloop()
-    
-    # Lesen der Nachrichten in der Pipe
-    with open(pipe_name, 'r') as pipe:
-        message = pipe.readline().strip()
-        if message:
-            # Überprüfen, ob ein Gewinner gemeldet wurde und ob es nicht der aktuelle Spieler ist
-            if "hat gewonnen" in message and name not in message:
-                # Setze den Check-Zustand der Buttons auf False
-                TTkButton._checkable = False
-                # Zeige eine Nachricht über die Niederlage des Spielers an
-                spieler.zeige_verloren_nachricht()
-                # Logge das Ende des Spiels
-                spieler.logger.info("Ende des Spiels")
-                    
-    # Thread-Funktion, um regelmäßig die Pipe auf Nachrichten zu überprüfen.
-    '''
-    hier muss der code noch bearbeitet werden
-    '''
-    # Starte den Thread als Daemon       
-    #threading.Thread(target=timer_thread, daemon=True).start() 
-    # Starte die Hauptfenster-Schleife
-    
     
   
 # Hauptfunktion, die die Kommandozeilenargumente verarbeitet und die Bingo-Karte erstellt    
@@ -478,5 +438,5 @@ if __name__ == "__main__":
     main()
     logging.info("Bingo Programm gestartet.")
     logging.info("Bingo Programm beendet.")
-    logging.info("Bingo Programm beendet.")
+    
 
