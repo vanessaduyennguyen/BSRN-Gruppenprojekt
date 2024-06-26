@@ -163,7 +163,7 @@ class Spieler:
         logging.info(message)
         self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
         self.lock_bingo_card()
-        self.root.quit()
+        # self.root.quit()
         # Benannte Pipe im write()-Modus öffnen
         with open(self.pipe_name, 'w') as pipe:
             pipe.write(message + "\n")
@@ -212,16 +212,6 @@ class Spieler:
         # Startet das Spiel
         self.root.mainloop()
 
-    async def notify_server(self):
-        try:
-            reader, writer = await asyncio.open_unix_connection(self.pipe_name)
-            writer.write(f"{self.name} hat gewonnen!".encode())
-            await writer.drain()
-            writer.close()
-            await writer.wait_closed()
-        except Exception as e:
-            self.logger.error(f"Fehler beim Benachrichtigen des Servers: {e}")
-
     def lock_bingo_card(self):
         # Disable all buttons on the bingo card
         for row in self.felder_matrix:
@@ -246,44 +236,48 @@ def open_file(filename):
         print(f"Fehler beim Öffnen der Datei: {e}")
         sys.exit(1)
 
+    
+clients = []
 async def server_process(pipe_name, pos, size):
     print("Das Bingospiel wurde gestartet.")
     if not os.path.exists(pipe_name):
         os.mkfifo(pipe_name)
-    
-    clients = []
-    
-    async def read_pipe(pipe_name):
-        while True:
-            try:
-                with open(pipe_name, 'r') as pipe:
-                    while True:
-                        message = pipe.readline().strip()
-                        if message:
-                            logging.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Nachricht empfangen: {message}")
-                            print(f"Nachricht empfangen: {message}")
-                            if "ist beigetreten" in message:
-                                client_name = message.split()[0]
-                                clients.append(client_name)
-                            elif "Kein Gewinner" in message:
-                                broadcast_message(clients, pipe_name, message)
-                                break
-                            elif "hat gewonnen" in message:
-                                broadcast_message(clients, pipe_name, message)
-                                break
-                        await asyncio.sleep(0.1)
-            except Exception as e:
-                logging.error(f"Error reading from pipe: {e}")
-                await asyncio.sleep(1)
-
-    def broadcast_message(clients, pipe_name, message):
-        for client in clients:
-            with open(pipe_name, 'w') as pipe:
-                pipe.write(f"{message}\n")
-                pipe.flush()
-
     await read_pipe(pipe_name)
+    
+async def read_pipe(pipe_name):
+    while True:
+        try:
+            with open(pipe_name, 'r') as pipe:
+                while True:
+                    message = pipe.readline().strip()
+                    if message:
+                        logging.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Nachricht empfangen: {message}")
+                        print(f"Nachricht empfangen: {message}")
+                        if "ist beigetreten" in message:
+                            client_name = message.split()[0]
+                            clients.append(client_name)
+                        elif "Kein Gewinner" in message:
+                            broadcast_message(clients,pipe_name, message)
+                            break
+                        elif "hat gewonnen" in message:
+                            broadcast_message(clients,pipe_name, message)
+                            break
+                    await asyncio.sleep(0.1)
+        except Exception as e:
+            logging.error(f"Error reading from pipe: {e}")
+        await asyncio.sleep(1)
+
+def broadcast_message(clients,pipe_name, message):
+    for client in clients:
+        client_pipe_name = f"/tmp/{client}_pipe"
+        if not os.path.exists(client_pipe_name):
+            os.mkfifo(client_pipe_name)
+        with open(client_pipe_name, 'w') as pipe:
+            pipe.write(f"{message}\n")
+            pipe.flush()
+
     print("Das Spiel ist beendet.")
+    sys.exit()
 
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     try:
@@ -296,7 +290,10 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
             pipe.flush()
 
         def lese_pipe():
-            with open(pipe_name, 'r') as pipe:
+            client_pipe_name = f"/tmp/{name}_pipe"
+            if not os.path.exists(client_pipe_name):
+                os.mkfifo(client_pipe_name)
+            with open(client_pipe_name, 'r') as pipe:
                 message = pipe.readline().strip()
                 if message:
                     if "hat gewonnen" in message and name not in message:
@@ -305,13 +302,10 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
                         spieler.lock_bingo_card()
                     elif "Kein Gewinner" in message:
                         spieler.lock_bingo_card()
+                        spieler.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
 
-        def timer_thread():
-            while True:
-                lese_pipe()
-                time.sleep(1)
 
-        threading.Thread(target=timer_thread, daemon=True).start()
+        threading.Thread(target=lese_pipe, daemon=True).start()
         spieler.root.mainloop()
     except Exception as e:
         print(f"Fehler im Client-Prozess: {e}")
