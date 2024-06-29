@@ -3,7 +3,6 @@ import argparse
 import os
 import sys
 import random
-import asyncio
 import logging
 import threading
 import time
@@ -32,26 +31,33 @@ class Spieler:
             self.bingoFenster.setLayout(self.winLayout)
             self.felder_matrix = []
             self.has_won = False
+            self.has_lose = True
 
             # Logdatei einrichten
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             log_filename = f"{timestamp}-bingo-{self.name}.txt"
+             # Konfiguration des Loggers
             self.logger = logging.getLogger(name)
-            handler = logging.FileHandler(log_filename)
+            self.logger.setLevel(logging.DEBUG)
             formatter = logging.Formatter('%(asctime)s - %(message)s')
+            #Handler für Datei hinzufügen
+            handler = logging.FileHandler(log_filename)
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
-            self.logger.setLevel(logging.DEBUG)
+            # Entfernen des Standard-Stream-Handlers (Terminalausgabe) damit es nicht im Terminal angezeigt wird
+            root_logger = logging.getLogger()
+            if root_logger.hasHandlers():
+                for h in root_logger.handlers:
+                    root_logger.removeHandler(h)
             # Start logging
-            self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Start des Spiels")
-            self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Größe des Spielfelds: {size}")
-
+            self.logger.info("Start des Spiels")
+            #self.logger.info("Größe des Spielfelds: {size}")
         except ImportError as e:
-            # Fehler beim Importieren des Moduls
+            #Fehler beim Importieren des Moduls TermTK ob es existiert
             print(f"ImportError: {e}")
             sys.exit(1)
         except Exception as e:
-            # Allgemeiner Fehler
+            #Allgemeiner Fehler
             print(f"Fehler beim Initialisieren des Spielers: {e}")
             sys.exit(1)
 
@@ -63,7 +69,7 @@ class Spieler:
         words: Liste der Wörter für die Bingo-Karte
         """
         try:
-            # Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
+            #Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
             self.felder_Anzahl = felder_Anzahl
             self.logger.info(f"Größe des Spielfelds: {felder_Anzahl} / {felder_Anzahl}")
             self.felder_matrix = []
@@ -110,11 +116,12 @@ class Spieler:
             # Allgemeiner Fehler
             print(f"Fehler beim Erstellen der Bingo-Karte: {e}")
 
+     # Wrapper-Methode für das Klickereignis eines Feldes
     def on_button_clicked_wrapper(self, button, word, x, y):
         def wrapper():
             self.on_button_clicked(button, word, x, y)
         return wrapper
-
+    # Ancklicken eines Wortes in die Logdatei schreiben
     def on_button_clicked(self, button, word, x, y):
         if not self.has_won and not button.isChecked():
             button.setChecked(True)
@@ -130,7 +137,7 @@ class Spieler:
 
     def zeige_gewonnen_nachricht(self):
         # Erstellen eines neuen Fensters, um die Gewinnnachricht anzuzeigen
-        gewonnenFenster = ttk.TTkWindow(parent=self.root, title="Bingo!", size=(30, 5))
+        gewonnenFenster = ttk.TTkWindow(parent=self.root, title=" Bingo!", size=(30, 5))
         # Positioniere das Fenster in der oberen rechten Ecke des Terminals
         terminal_width = self.root.width()
         gewonnenFenster.move(terminal_width - 50, 0)
@@ -144,7 +151,7 @@ class Spieler:
 
     def zeige_verloren_nachricht(self):
         # Erstellen eines neuen Fensters, um die Verliernachricht anzuzeigen
-        verlorenFenster = ttk.TTkWindow(parent=self.root, title="Verloren", size=(30, 5))
+        verlorenFenster = ttk.TTkWindow(parent=self.root, title=" Bingo! ", size=(30, 5))
         # Positioniere das Fenster in der oberen rechten Ecke des Terminals
         terminal_width = self.root.width()
         verlorenFenster.move(terminal_width - 50, 0)
@@ -153,7 +160,7 @@ class Spieler:
         verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
         verlorenLayout.addWidget(verlorenLabel)
         verlorenFenster.show()
-        self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Verloren")
+        self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Verloren ")
         print("Du hast verloren :(")
 
     # Methode zum Beenden des Spiels und Schreiben einer Nachricht in die Pipe
@@ -179,7 +186,7 @@ class Spieler:
             self.bingo_button.setDisabled()
             self.has_won = True
             self.zeige_gewonnen_nachricht()
-            message = f"{self.name} hat gewonnen!!!"
+            message = f"{self.name} hat gewonnen!!"
             logging.info(message)
             self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
             self.lock_bingo_card()
@@ -236,15 +243,24 @@ def open_file(filename):
         print(f"Fehler beim Öffnen der Datei: {e}")
         sys.exit(1)
 
+def server_process(pipe_name, pos, size):
+    """
+    Server-Prozess zur Verwaltung des Spiels und der Bingo-Karte des Servers
     
-clients = []
-async def server_process(pipe_name, pos, size):
+    pipe_name: Name der benannten Pipe zur Kommunikation
+    pos: Position des Fensters
+    size: Größe des Fensters
+    """
     print("Das Bingospiel wurde gestartet.")
+
     if not os.path.exists(pipe_name):
+        # Erstellen mit First in First Out
         os.mkfifo(pipe_name)
-    await read_pipe(pipe_name)
+
+    # Spieler in einer Liste speichern
+    clients = []
     
-async def read_pipe(pipe_name):
+     # Benannte Pipe im read()-Modus öffnen
     while True:
         try:
             with open(pipe_name, 'r') as pipe:
@@ -262,11 +278,11 @@ async def read_pipe(pipe_name):
                         elif "hat gewonnen" in message:
                             broadcast_message(clients,pipe_name, message)
                             break
-                    await asyncio.sleep(0.1)
         except Exception as e:
             logging.error(f"Error reading from pipe: {e}")
-        await asyncio.sleep(1)
 
+
+# Für jeden Client wird eine Pipe erstellt
 def broadcast_message(clients,pipe_name, message):
     for client in clients:
         client_pipe_name = f"/tmp/{client}_pipe"
@@ -298,11 +314,15 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
                 if message:
                     if "hat gewonnen" in message and name not in message:
                         spieler.zeige_verloren_nachricht()
-                        spieler.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
+                        spieler.logger.info(f"Ende des Spiels")
                         spieler.lock_bingo_card()
                     elif "Kein Gewinner" in message:
                         spieler.lock_bingo_card()
-                        spieler.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
+                        spieler.logger.info(f"Ende des Spiels")
+                    elif "Du hast verloren!" in message and name in message:
+                            spieler.zeige_verloren_nachricht()
+                            spieler.logger.info("Ende des Spiels")
+        
 
 
         threading.Thread(target=lese_pipe, daemon=True).start()
@@ -330,6 +350,16 @@ def main():
         print(f"Fehler beim Verarbeiten der Argumente: {e}")
         parser.print_help()
         sys.exit(1)
+    except argparse.ArgumentTypeError as e:
+        # Typfehler bei den Argumenten, wenn felder_Anzahl kein gültige Ganzzahl ist
+        print(f"argparse.ArgumentTypeError: {e}")
+        print("Ursache: Das Argument felder_Anzahl ist keine gültige Ganzzahl.")
+        sys.exit(1)
+    except Exception as e:
+        # Allgemeiner Fehler
+        print(f"Allgemeiner Fehler: {e}")
+        sys.exit(1)
+
     filename = args.wordfile
     felder_Anzahl = args.felder_Anzahl
 
@@ -345,11 +375,14 @@ def main():
         words = open_file(filename)
 
         if args.server:
-            asyncio.run(server_process(pipe_name, (0, 0), (50, 20)))
+            # Startet den Server-Prozess wenn --server eingegeben wird
+            server_process(pipe_name, (0, 0), (50, 20))
         else:
+            # Startet den Client-Prozess wenn --name eingegeben wird
             if args.name:
                 name = args.name
             else:
+                # Falls kein Name beim Starten des Prozesses eingegeben wurde
                 name = input("Geben Sie Ihren Namen ein:")
 
             client_process(name, pipe_name, (0, 0), (50, 20), felder_Anzahl, words)
