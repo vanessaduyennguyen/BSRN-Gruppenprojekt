@@ -31,8 +31,7 @@ class Spieler:
             self.bingoFenster.setLayout(self.winLayout)
             self.felder_matrix = []
             self.has_won = False
-            self.has_lose = True
-
+            
             # Logdatei einrichten
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             log_filename = f"{timestamp}-bingo-{self.name}.txt"
@@ -191,8 +190,6 @@ class Spieler:
         if self.pruefe_Ob_Bingo():
             TTkButton._checkable = False
             self.exit_button._checkable = False
-            self.exit_button.setDisabled()
-            self.bingo_button.setDisabled()
             self.has_won = True
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!"
@@ -352,6 +349,7 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
 
         threading.Thread(target=lese_pipe, daemon=True).start()
         spieler.root.mainloop()
+        
     except Exception as e:
         print(f"Fehler im Client-Prozess: {e}")
         sys.exit(1)
@@ -378,7 +376,7 @@ def main():
         parser.print_help()
         sys.exit(1)
     except argparse.ArgumentTypeError as e:
-        # Typfehler bei den Argumenten, wenn felder_Anzahl kein gültige Ganzzahl ist
+        # Typfehler bei den Argumenten, wenn felder_Anzahl keine gültige Ganzzahl ist
         print(f"argparse.ArgumentTypeError: {e}")
         print("Ursache: Das Argument felder_Anzahl ist keine gültige Ganzzahl.")
         sys.exit(1)
