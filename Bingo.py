@@ -231,7 +231,7 @@ class Spieler:
         return bingo
 
     def start(self):
-        # Startet das Spiel
+        # Startet das Spiel in der pyTermTk-Mainloop
         self.root.mainloop()
 
     def lock_bingo_card(self):
