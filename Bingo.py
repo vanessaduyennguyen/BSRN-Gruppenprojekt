@@ -36,22 +36,26 @@ class Spieler:
             # Logdatei einrichten
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             log_filename = f"{timestamp}-bingo-{self.name}.txt"
-             # Konfiguration des Loggers
+            
+            # Konfiguration des Loggers
             self.logger = logging.getLogger(name)
             self.logger.setLevel(logging.DEBUG)
             formatter = logging.Formatter('%(asctime)s - %(message)s')
-            #Handler für Datei hinzufügen
+            
+            # Handler für Datei hinzufügen
             handler = logging.FileHandler(log_filename)
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
+            
             # Entfernen des Standard-Stream-Handlers (Terminalausgabe) damit es nicht im Terminal angezeigt wird
             root_logger = logging.getLogger()
             if root_logger.hasHandlers():
                 for h in root_logger.handlers:
                     root_logger.removeHandler(h)
+                    
             # Start logging
             self.logger.info("Start des Spiels")
-            #self.logger.info("Größe des Spielfelds: {size}")
+            
         except ImportError as e:
             #Fehler beim Importieren des Moduls TermTK ob es existiert
             print(f"ImportError: {e}")
@@ -170,7 +174,6 @@ class Spieler:
         logging.info(message)
         self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
         self.lock_bingo_card()
-        # self.root.quit()
         # Benannte Pipe im write()-Modus öffnen
         with open(self.pipe_name, 'w') as pipe:
             pipe.write(message + "\n")
@@ -197,17 +200,22 @@ class Spieler:
     def pruefe_Ob_Bingo(self):
         # Überprüft, ob es ein Bingo gibt
         bingo = False
+        
+        # Diagonale
         if all(self.felder_matrix[i][i].isChecked() for i in range(len(self.felder_matrix))):
             bingo = True
 
+        # Diagonale 
         if all(self.felder_matrix[i][len(self.felder_matrix) - 1 - i].isChecked() for i in range(len(self.felder_matrix))):
             bingo = True
 
+        # Reihe
         for row in self.felder_matrix:
             if all(feld.isChecked() for feld in row):
                 bingo = True
                 break
-
+        
+        # Spalte
         for col in range(len(self.felder_matrix[0])):
             if all(row[col].isChecked() for row in self.felder_matrix):
                 bingo = True
@@ -220,7 +228,7 @@ class Spieler:
         self.root.mainloop()
 
     def lock_bingo_card(self):
-        # Disable all buttons on the bingo card
+        # Felder können nicht mehr angeklickt werden
         for row in self.felder_matrix:
             for button in row:
                 button.setDisabled()
@@ -296,6 +304,17 @@ def broadcast_message(clients,pipe_name, message):
     sys.exit()
 
 def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
+    """
+    Client-Prozess zur Erstellung eines Spielers und dessen Bingo-Karte.
+    
+    name: Name des Spielers
+    pipe_name: Name der benannten Pipe zur Kommunikation
+    pos: Position des Fensters
+    size: Größe des Fensters
+    felder_Anzahl: Anzahl der Felder (NxN)
+    words: Liste der Wörter für die Bingo-Karte
+    """
+    
     try:
         spieler = Spieler(name, pipe_name, pos, size)
         spieler.create_bingo_card(felder_Anzahl, words)
@@ -324,12 +343,13 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
                             spieler.logger.info("Ende des Spiels")
         
 
-
         threading.Thread(target=lese_pipe, daemon=True).start()
         spieler.root.mainloop()
     except Exception as e:
         print(f"Fehler im Client-Prozess: {e}")
         sys.exit(1)
+
+# Hauptfunktion, die die Kommandozeilenargumente verarbeitet und Prozesse erstellt
 
 def main():
     # Kommandozeilenargumente mit dem argparse-Modul hinzufügen
@@ -372,6 +392,7 @@ def main():
     pipe_name = "/tmp/bingo_pipe"
 
     if os.path.exists(filename):
+        # Wenn die Datei existiert, wird sie geöffnet
         words = open_file(filename)
 
         if args.server:
@@ -387,6 +408,7 @@ def main():
 
             client_process(name, pipe_name, (0, 0), (50, 20), felder_Anzahl, words)
     else:
+        # Wenn die Datei nicht existiert, wird eine Fehlermeldung ausgegeben
         logging.error(f"Die Datei {filename} existiert nicht.")
         print(f"Die Datei {filename} existiert nicht.")
         sys.exit(1)
