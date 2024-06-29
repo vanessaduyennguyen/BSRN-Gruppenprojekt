@@ -154,7 +154,7 @@ class Spieler:
         gewonnenFenster.move(terminal_width - 50, 0)
         gewonnenLayout = ttk.TTkLayout()
         gewonnenFenster.setLayout(gewonnenLayout)
-        gewonnenLabel = ttk.TTkLabel(text=f"{self.name} hat gewonnen!!!")
+        gewonnenLabel = ttk.TTkLabel(text=f"{self.name}, du hast gewonnen!!!")
         gewonnenLayout.addWidget(gewonnenLabel)
         gewonnenFenster.show()
         self.logger.info(f"Sieg")
@@ -167,7 +167,7 @@ class Spieler:
         verlorenFenster.move(terminal_width - 50, 0)
         verlorenLayout = ttk.TTkLayout()
         verlorenFenster.setLayout(verlorenLayout)
-        verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
+        verlorenLabel = ttk.TTkLabel(text=f"{self.name}, du hast verloren :(")
         verlorenLayout.addWidget(verlorenLabel)
         verlorenFenster.show()
         self.logger.info(f"Verloren ")
@@ -177,7 +177,6 @@ class Spieler:
         # Beendet das Spiel
         message = f"Kein Gewinner"
         logging.info(message)
-        self.logger.info(f"Ende des Spiels")
         self.lock_bingo_card()
         # Benannte Pipe im write()-Modus öffnen
         with open(self.pipe_name, 'w') as pipe:
@@ -280,22 +279,22 @@ def server_process(pipe_name, pos, size):
                     message = pipe.readline().strip()
                     if message:
                         logging.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Nachricht empfangen: {message}")
-                        print(f"Nachricht empfangen: {message}")
+                        print(f"{message}")
                         if "ist beigetreten" in message:
                             client_name = message.split()[0]
                             clients.append(client_name)
                         elif "Kein Gewinner" in message:
-                            broadcast_message(clients,pipe_name, message)
+                            broadcast_message(clients, message)
                             break
                         elif "hat gewonnen" in message:
-                            broadcast_message(clients,pipe_name, message)
+                            broadcast_message(clients, message)
                             break
         except Exception as e:
             logging.error(f"Error reading from pipe: {e}")
 
 
 # Für jeden Client wird eine Pipe erstellt
-def broadcast_message(clients,pipe_name, message):
+def broadcast_message(clients, message):
     for client in clients:
         client_pipe_name = f"/tmp/{client}_pipe"
         if not os.path.exists(client_pipe_name):
@@ -342,11 +341,7 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
                     elif "Kein Gewinner" in message:
                         spieler.lock_bingo_card()
                         spieler.logger.info(f"Ende des Spiels")
-                    elif "Du hast verloren!" in message and name in message:
-                            spieler.zeige_verloren_nachricht()
-                            spieler.logger.info("Ende des Spiels")
         
-
         threading.Thread(target=lese_pipe, daemon=True).start()
         spieler.root.mainloop()
         
