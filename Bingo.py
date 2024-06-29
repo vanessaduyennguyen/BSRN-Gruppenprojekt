@@ -136,7 +136,7 @@ class Spieler:
     # Ancklicken eines Wortes in die Logdatei schreiben
     def on_button_clicked(self, button, word, x, y):
         if not self.has_won and button.isChecked():
-            self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} {word} ({x}/{y})")
+            self.logger.info(f"{word} ({x}/{y})")
 
     @staticmethod
     def JOKER_ausfüllen(feld):
@@ -157,7 +157,7 @@ class Spieler:
         gewonnenLabel = ttk.TTkLabel(text=f"{self.name} hat gewonnen!!!")
         gewonnenLayout.addWidget(gewonnenLabel)
         gewonnenFenster.show()
-        self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Sieg")
+        self.logger.info(f"Sieg")
 
     def zeige_verloren_nachricht(self):
         # Erstellen eines neuen Fensters, um die Verliernachricht anzuzeigen
@@ -170,14 +170,14 @@ class Spieler:
         verlorenLabel = ttk.TTkLabel(text=f"{self.name} hat verloren :(")
         verlorenLayout.addWidget(verlorenLabel)
         verlorenFenster.show()
-        self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Verloren ")
+        self.logger.info(f"Verloren ")
 
     # Methode zum Beenden des Spiels und Schreiben einer Nachricht in die Pipe
     def spiel_beenden(self):
         # Beendet das Spiel
         message = f"Kein Gewinner"
         logging.info(message)
-        self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
+        self.logger.info(f"Ende des Spiels")
         self.lock_bingo_card()
         # Benannte Pipe im write()-Modus öffnen
         with open(self.pipe_name, 'w') as pipe:
@@ -194,7 +194,7 @@ class Spieler:
             self.zeige_gewonnen_nachricht()
             message = f"{self.name} hat gewonnen!!"
             logging.info(message)
-            self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
+            self.logger.info(f"Ende des Spiels")
             self.lock_bingo_card()
             
             with open(self.pipe_name, 'w') as pipe:
