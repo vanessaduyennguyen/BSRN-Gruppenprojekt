@@ -36,23 +36,21 @@ class Spieler:
             # Logdatei einrichten
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             log_filename = f"{timestamp}-bingo-{self.name}.txt"
-            
-            # Konfiguration des Loggers
             self.logger = logging.getLogger(name)
-            self.logger.setLevel(logging.DEBUG)
-            formatter = logging.Formatter('%(asctime)s - %(message)s')
             
-            # Handler für Datei hinzufügen
+            # Handler für Datei-Logging
             handler = logging.FileHandler(log_filename)
+            formatter = logging.Formatter('%(asctime)s - %(message)s')
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
+            self.logger.setLevel(logging.DEBUG)
             
-            # Entfernen des Standard-Stream-Handlers (Terminalausgabe) damit es nicht im Terminal angezeigt wird
-            root_logger = logging.getLogger()
-            if root_logger.hasHandlers():
-                for h in root_logger.handlers:
-                    root_logger.removeHandler(h)
-                    
+            # Entferne den Standard-StreamHandler, falls vorhanden, 
+            # damit es nicht in der Konsole ausgegeben wird
+            for handler in logging.root.handlers[:]:
+                if isinstance(handler, logging.StreamHandler):
+                    logging.root.removeHandler(handler)
+
             # Start logging
             self.logger.info("Start des Spiels")
             
@@ -75,7 +73,7 @@ class Spieler:
         try:
             #Eine 2D-Liste (Matrix von den Bingofeldern) wird zur Überprüfung, ob es ein Bingo gibt, erstellt.
             self.felder_Anzahl = felder_Anzahl
-            self.logger.info(f"Größe des Spielfelds: {felder_Anzahl} / {felder_Anzahl}")
+            self.logger.info(f"Größe des Spielfelds: {felder_Anzahl} x {felder_Anzahl}")
             self.felder_matrix = []
             for x in range(felder_Anzahl):
                 # Es wird eine Reihe der Matrix erstellt
@@ -84,13 +82,16 @@ class Spieler:
                     word = random.choice(words)
                     words.remove(word)
                     feld = TTkButton(border=True, text=word, checked=False, checkable=True)
+                    # Verbindung der Methode pruefe_Ob_Bingo mit dem Klickereignis des Feldes
                     feld.clicked.connect(self.pruefe_Ob_Bingo)
                     feld.clicked.connect(self.on_button_clicked_wrapper(feld, word, x, y))
+                    # Feld zum Layout hinzufügen
                     self.winLayout.addWidget(feld, x, y)
                     # Zu der Reihe der Matrix werden bei jedem Durchlauf der Schleife TTkButton-Objekte hinzugefügt (insgesamt felder_Anzahl-Objekte).
                     rows.append(feld)
 
                     if felder_Anzahl % 2 != 0 and x == (felder_Anzahl // 2) and y == (felder_Anzahl // 2):
+                        # Jokerfeld erstellen
                         feld = self.JOKER_ausfüllen(feld)
                         # Der Index von dem altem Feld (der zuletzt genutzte Index) wird durch das neue Feld (mit den "neuen Attributen") ersetzt.
                         last_index = len(rows) - 1
@@ -100,7 +101,7 @@ class Spieler:
                 # Bei erneuten Durchlauf der Schleife wird wieder eine neue Reihe erstellt, hinzugefügt, etc....
                 self.felder_matrix.append(rows)
 
-            # Bingo- und Beenden-Buttons hinzufügen
+            # Bingo- und Spiel Beenden-Buttons hinzufügen
             self.bingo_button = TTkButton(text="Bingo", parent=self.bingoFenster, border=True)
             self.bingo_button.clicked.connect(self.bingo_check)
             self.winLayout.addWidget(self.bingo_button, felder_Anzahl, 0, 1, felder_Anzahl)
@@ -110,6 +111,7 @@ class Spieler:
             self.winLayout.addWidget(self.exit_button, felder_Anzahl + 1, 0, 1, felder_Anzahl)
 
             return self.felder_matrix
+        
         except IndexError as e:
             # Fehler bei der Indexierung
             print(f"IndexError: {e}")
@@ -119,16 +121,22 @@ class Spieler:
         except Exception as e:
             # Allgemeiner Fehler
             print(f"Fehler beim Erstellen der Bingo-Karte: {e}")
-
-     # Wrapper-Methode für das Klickereignis eines Feldes
+    
+    # Methode wird aufgerufen, wenn ein Feld angeklickt wird
+    def on_button_clicked(self, button, word, x, y):
+        if not self.has_won and not button.isChecked():
+            # Status: Button ist angeklickt
+            button.setChecked(True)
+     
+    # Wrapper-Methode für das Klickereignis eines Feldes
     def on_button_clicked_wrapper(self, button, word, x, y):
         def wrapper():
             self.on_button_clicked(button, word, x, y)
         return wrapper
+    
     # Ancklicken eines Wortes in die Logdatei schreiben
     def on_button_clicked(self, button, word, x, y):
-        if not self.has_won and not button.isChecked():
-            button.setChecked(True)
+        if not self.has_won and button.isChecked():
             self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} {word} ({x}/{y})")
 
     @staticmethod
@@ -151,7 +159,6 @@ class Spieler:
         gewonnenLayout.addWidget(gewonnenLabel)
         gewonnenFenster.show()
         self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Sieg")
-        print("Du hast gewonnen!!!")
 
     def zeige_verloren_nachricht(self):
         # Erstellen eines neuen Fensters, um die Verliernachricht anzuzeigen
@@ -165,7 +172,6 @@ class Spieler:
         verlorenLayout.addWidget(verlorenLabel)
         verlorenFenster.show()
         self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Verloren ")
-        print("Du hast verloren :(")
 
     # Methode zum Beenden des Spiels und Schreiben einer Nachricht in die Pipe
     def spiel_beenden(self):
@@ -193,6 +199,7 @@ class Spieler:
             logging.info(message)
             self.logger.info(f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')} Ende des Spiels")
             self.lock_bingo_card()
+            
             with open(self.pipe_name, 'w') as pipe:
                 pipe.write(message + "\n")
                 pipe.flush()
