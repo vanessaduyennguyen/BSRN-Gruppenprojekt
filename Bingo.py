@@ -1,3 +1,6 @@
+# Gruppenmitglieder:
+# Ioana-Carmen Moldovan (1514892), Vanessa Nguyen (1513741), Pantea Dolatabadian (1414653), Aliia Nurbekova (1526039), Thi Song Thu Pham (1413382) 
+
 import TermTk as ttk
 import argparse
 import os
