@@ -319,18 +319,26 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
     """
     
     try:
+        # Ein Spieler wird erstellt
         spieler = Spieler(name, pipe_name, pos, size)
+        # Die Bingo-Karte des Spielers wird erstellt
         spieler.create_bingo_card(felder_Anzahl, words)
 
+        # Die Beitrittsnachricht wird in die Pipe geschrieben
         with open(pipe_name, 'w') as pipe:
             pipe.write(f"{name} ist beigetreten.\n")
             print(name + " ist beigetreten.")
             pipe.flush()
 
+        # Funktion zum Lesen von Nachrichten aus der Pipe
         def lese_pipe():
+            # Die Pipe wird nach dem jeweiligen Client benannt
             client_pipe_name = f"/tmp/{name}_pipe"
+            # Falls sie nicht existiert, wird sie hiermit erstellt:
             if not os.path.exists(client_pipe_name):
                 os.mkfifo(client_pipe_name)
+                
+            # Die Pipe wird im read()-Modus erstellt und wartet auf Nachrichten
             with open(client_pipe_name, 'r') as pipe:
                 message = pipe.readline().strip()
                 if message:
@@ -342,7 +350,10 @@ def client_process(name, pipe_name, pos, size, felder_Anzahl, words):
                         spieler.lock_bingo_card()
                         spieler.logger.info(f"Ende des Spiels")
         
+        # Thread, um die lese_pipe-Funktion asynchron auszuführen
         threading.Thread(target=lese_pipe, daemon=True).start()
+        
+        # Die mainloop von pyTermTk wird aufgerufen, um die Ereignisse dort zu verzeichnen bspw. das Markieren von Feldern
         spieler.root.mainloop()
         
     except Exception as e:
